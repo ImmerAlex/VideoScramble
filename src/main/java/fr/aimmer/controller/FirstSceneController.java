@@ -1,6 +1,5 @@
 package fr.aimmer.controller;
 
-import static fr.aimmer.Main.FILE;
 import static fr.aimmer.Main.FILE_PATH;
 import static fr.aimmer.Main.HEIGHT;
 import static fr.aimmer.Main.WIDTH;
@@ -39,20 +38,11 @@ public class FirstSceneController implements Controller
 	private MediaView getMediaView()
 	{
 		URL videoUrl = null;
-		if (FILE_PATH != null){
-			videoUrl = getClass().getResource(FILE_PATH);
-		} else {
-			try {
-				videoUrl = Path.of(FILE.getAbsolutePath()).toUri().toURL();
-			} catch (MalformedURLException e) {
-				System.err.print(e);
-				System.exit(126);
-			}
-		}
-
-		if (videoUrl == null) {
-			System.err.println("< " + FILE_PATH + " > not found, using default video for demo");
-			videoUrl = getClass().getResource("/video/Pencil_Candle_1280x720.mp4");
+		try {
+			videoUrl = Path.of(FILE_PATH).toUri().toURL();
+		} catch (MalformedURLException e) {
+			System.err.print(e);
+			System.exit(126);
 		}
 
 		Media media = new Media(videoUrl.toExternalForm());
