@@ -2,8 +2,10 @@ package fr.aimmer;
 
 import fr.aimmer.controller.HomeController;
 import fr.aimmer.controller.FirstSceneController;
+import fr.aimmer.listener.StageGlobalListener;
 import fr.aimmer.ui.scene.SceneManager;
 import javafx.application.Application;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
 
 public class App extends Application
@@ -16,6 +18,8 @@ public class App extends Application
 	@Override
 	public void start(Stage stage)
 	{
+		stage.addEventFilter(KeyEvent.KEY_PRESSED, StageGlobalListener::keyTyped);
+
 		SceneManager sm = SceneManager.getInstance();
 		sm.setStage(stage);
 
