@@ -44,7 +44,7 @@ L'application nécessite trois arguments obligatoires :
 Exemple d'utilisation :
 
 ```bash
-java -jar target/video-scramble.jar 1280 720 video/Pencil_Candle_1280x720.mp4
+java -jar target/video-scramble.jar 1280 720 ./chemin/vers/votre/video.mp4
 ```
 
 ### Via Maven (javafx:run)
@@ -58,18 +58,18 @@ mvn javafx:run
 Cette commande utilise les arguments configurés dans le `pom.xml` par défaut :
 - `1280` (largeur)
 - `720` (hauteur)
-- `video/Pencil_Candle_1280x720.mp4` (fichier vidéo)
+- `./chemin/vers/votre/video.mp4` (fichier vidéo)
 
 Pour spécifier vos propres arguments, modifiez la propriété `app.arg` dans le `pom.xml` :
 
 ```xml
 <properties>
-    <app.arg>1920 1080 chemin/vers/votre/video.mp4</app.arg>
+    <app.arg>1920 1080 ./chemin/vers/votre/video.mp4</app.arg>
 </properties>
 ```
 
 Ou lancez la commande avec des arguments personnalisés (si votre plugin Maven le supporte) :
 
 ```bash
-mvn javafx:run -Djavafx.run.args="1920 1080 video/ma_video.mp4"
+mvn javafx:run -Dapp.args="1920 1080 ./chemin/vers/votre/video.mp4"
 ```
