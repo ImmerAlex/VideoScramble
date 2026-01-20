@@ -1,7 +1,7 @@
 package fr.aimmer;
 
 import fr.aimmer.controller.HomeController;
-import fr.aimmer.controller.SettingsController;
+import fr.aimmer.controller.FirstSceneController;
 import fr.aimmer.ui.scene.SceneManager;
 import javafx.application.Application;
 import javafx.stage.Stage;
@@ -20,7 +20,7 @@ public class App extends Application
 		sm.setStage(stage);
 
 		sm.register("home", new HomeController());
-		sm.register("settings", new SettingsController());
+		sm.register("scene:1", new FirstSceneController());
 
 		sm.switchTo("home", true);
 		stage.show();
