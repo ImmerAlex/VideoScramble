@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>fr.aimmer</groupId>
-  <artifactId>projet</artifactId>
+  <artifactId>video-scramble</artifactId>
   <version>1.0-SNAPSHOT</version>
 
   <properties>
@@ -49,6 +49,8 @@
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>
+          <finalName>video-scramble</finalName>
+          <appendAssemblyId>false</appendAssemblyId>
         </configuration>
         <executions>
           <execution>
