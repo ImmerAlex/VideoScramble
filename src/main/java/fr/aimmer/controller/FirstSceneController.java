@@ -35,7 +35,10 @@ public class FirstSceneController implements Controller
 	{
 		URL videoUrl = getClass().getResource(FILE_PATH);
 
-		if (videoUrl == null) throw new NullPointerException("< " + FILE_PATH + " > not found");
+		if (videoUrl == null) {
+			System.err.println("< " + FILE_PATH + " > not found, using default video for demo");
+			videoUrl = getClass().getResource("/video/Pencil_Candle_1280x720.mp4");
+		}
 
 		Media media = new Media(videoUrl.toExternalForm());
 
