@@ -12,6 +12,7 @@
         <maven.compiler.source>23</maven.compiler.source>
         <maven.compiler.target>23</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <app.arg>1280 720 video/Pencil_Candle_1280x720.mp4</app.arg>
     </properties>
 
     <dependencies>
@@ -30,7 +31,6 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>fr.aimmer.Main</mainClass>
-                    <!--suppress UnresolvedMavenProperty -->
                     <commandlineArgs>${app.arg}</commandlineArgs>
                 </configuration>
             </plugin>
