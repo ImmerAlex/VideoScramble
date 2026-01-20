@@ -1,39 +1,19 @@
 package fr.aimmer;
 
-import fr.aimmer.controller.HomeController;
-import fr.aimmer.controller.SettingsController;
-import fr.aimmer.ui.scene.SceneManager;
-import javafx.application.Application;
-import javafx.stage.Stage;
-
-import java.util.Arrays;
-
-public class Main extends Application
+public class Main
 {
-	public static final int WIDTH  = 800;
-	public static final int HEIGHT = 600;
+	public static int WIDTH ;
+	public static int HEIGHT;
+	public static String FILE_PATH;
 
 	public static void main(String[] args)
 	{
-		System.out.println("Debut du code");
-		System.out.println(Arrays.toString(args));
-		for (String arg : args) {
-			System.out.println(arg);
-		}
+		if (args.length != 3) throw new RuntimeException("Invalid number of arguments");
 
-		launch();
-	}
+		Main.WIDTH = Integer.parseInt(args[0]);
+		Main.HEIGHT = Integer.parseInt(args[1]);
+		Main.FILE_PATH = args[2];
 
-	@Override
-	public void start(Stage stage) throws Exception
-	{
-		SceneManager sm = SceneManager.getInstance();
-		sm.setStage(stage);
-
-		sm.register("home", new HomeController());
-		sm.register("settings", new SettingsController());
-
-		sm.switchTo("home", true);
-		stage.show();
+		App.application(args);
 	}
 }

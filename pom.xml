@@ -35,7 +35,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>fr.aimmer.Main</mainClass>
+                    <mainClass>fr.aimmer.App</mainClass>
                     <commandlineArgs>${app.arg}</commandlineArgs>
                 </configuration>
             </plugin>
