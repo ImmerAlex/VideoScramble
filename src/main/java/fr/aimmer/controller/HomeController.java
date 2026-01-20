@@ -9,17 +9,13 @@ import static fr.aimmer.Main.WIDTH;
 
 public class HomeController implements Controller
 {
-	private final Button button;
-
-	public HomeController()
-	{
-		this.button = new Button("Go to Settings");
-		this.button.setOnAction(_ -> SceneManager.getInstance().switchTo("settings", true));
-	}
-
 	@Override
 	public Scene get()
 	{
+		Button button = new Button("SCENE 1");
+		button.setOnAction(_ ->
+								   SceneManager.getInstance().switchTo("scene:1"));
+
 		return new Scene(button, WIDTH, HEIGHT);
 	}
 }
