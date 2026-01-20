@@ -1,5 +1,7 @@
 package fr.aimmer;
 
+import java.io.File;
+
 import nu.pattern.OpenCV;
 
 public class Main
@@ -7,6 +9,7 @@ public class Main
 	public static int    WIDTH;
 	public static int    HEIGHT;
 	public static String FILE_PATH;
+	public static File   FILE;
 
 	public static void main(String[] args)
 	{
@@ -33,7 +36,7 @@ public class Main
 		try {
 			Main.WIDTH = Integer.parseInt(args[0]);
 			Main.HEIGHT = Integer.parseInt(args[1]);
-			Main.FILE_PATH = args[2].replaceFirst("^(?!/)", "/");
+			Main.FILE = new File(args[2]);
 		} catch (NumberFormatException e) {
 			System.out.println("Erreur: width et height doivent être des entiers.");
 			printHelp();
