@@ -5,8 +5,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
-import static fr.aimmer.App.HEIGHT;
-import static fr.aimmer.App.WIDTH;
+import static fr.aimmer.Main.HEIGHT;
+import static fr.aimmer.Main.WIDTH;
 
 public class SettingsController implements Controller
 {

@@ -4,8 +4,8 @@ import fr.aimmer.ui.scene.SceneManager;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 
-import static fr.aimmer.App.HEIGHT;
-import static fr.aimmer.App.WIDTH;
+import static fr.aimmer.Main.HEIGHT;
+import static fr.aimmer.Main.WIDTH;
 
 public class HomeController implements Controller
 {
