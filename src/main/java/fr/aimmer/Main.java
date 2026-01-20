@@ -24,7 +24,16 @@ public class Main {
 		try {
 			Main.WIDTH = Integer.parseInt(args[0]);
 			Main.HEIGHT = Integer.parseInt(args[1]);
-			Main.FILE_PATH = new File(args[2]).getAbsolutePath();
+			var file = new File(args[2]);
+			if (!file.canRead()){
+				System.err.print("Fichier introuvable ou illisible");
+				System.exit(2);
+			}
+			Main.FILE_PATH = file.getAbsolutePath();
+			if (!Main.FILE_PATH.matches("^.*\\.mp4$")){
+				System.err.print("Format non supporté, veuillez fournir un fichier mp4");
+				System.exit(3);
+			}
 		} catch (NumberFormatException e) {
 			System.out.println("Erreur: width et height doivent être des entiers.");
 			printHelp();
