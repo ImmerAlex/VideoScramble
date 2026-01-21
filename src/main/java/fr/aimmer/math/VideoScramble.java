@@ -42,14 +42,13 @@ public class VideoScramble
 	{
 		VideoCapture capture = new VideoCapture(file.getAbsolutePath());
 
+		File outputFile = new File(Main.OUTPUT_DIR, ( Main.MODE == 'C' ? "encrypted_" : "decrypted_" ) + file.getName());
 		int width = (int) capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
 		int height = (int) capture.get(Videoio.CAP_PROP_FRAME_HEIGHT);
 		int fps = (int) capture.get(Videoio.CAP_PROP_FPS);
 
 		VideoWriter writer = new VideoWriter(
-				new File(Main.OUTPUT_DIR,
-						 ( Main.MODE == 'C' ? "encrypted_" : "decrypted_" ) + file.getName()
-				).getAbsolutePath(),
+				outputFile.getAbsolutePath(),
 				VideoWriter.fourcc('m', 'p', '4', 'v'),
 				fps,
 				new Size(width, height)
@@ -68,7 +67,7 @@ public class VideoScramble
 		capture.release();
 		writer.release();
 
-		return file;
+		return outputFile;
 	}
 
 	private static int[] computeRowMapping(int height, int offset, int step)
