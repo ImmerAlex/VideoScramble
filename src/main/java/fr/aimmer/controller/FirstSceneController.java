@@ -1,7 +1,7 @@
 package fr.aimmer.controller;
 
 import fr.aimmer.Main;
-import fr.aimmer.math.VideoScramble;
+import fr.aimmer.math.EncryptionAlgorithm;
 import fr.aimmer.utils.MediaViewFactory;
 import fr.aimmer.view.GoHomeButton;
 import javafx.concurrent.Task;
@@ -41,7 +41,7 @@ public class FirstSceneController implements Controller
 			@Override
 			protected List<MediaView> call() throws Exception
 			{
-				File encryptedFile = VideoScramble.encrypt(FILE);
+				File encryptedFile = EncryptionAlgorithm.encrypt(FILE);
 				MediaView originalVideo = MediaViewFactory.getMediaView(FILE);
 				MediaView encryptedVideo = MediaViewFactory.getMediaView(encryptedFile);
 				return List.of(originalVideo, encryptedVideo);
