@@ -4,7 +4,8 @@ import java.io.File;
 
 public class DecryptionAlgorithm
 {
-	public static File eulerDecrypt(File file) {
+	public static File euclideDecrypt(File file) {
+
 		return file;
 	}
 
