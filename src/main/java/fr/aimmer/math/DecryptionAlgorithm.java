@@ -1,12 +1,19 @@
 package fr.aimmer.math;
 
 import java.io.File;
+import java.io.IOException;
 
-public class DecryptionAlgorithm
-{
-	public static File euclideDecrypt(File file) {
+import org.opencv.videoio.VideoCapture;
 
-		return file;
+public class DecryptionAlgorithm {
+
+	public static File euclideDecrypt(File encryptedFile) throws IOException {
+		File decryptedFile = null;
+		// Charger la vidéo
+		var encryptedVideoCapture = new VideoCapture(encryptedFile.getAbsolutePath());
+		// TODO: Tout faire en fait
+
+		return decryptedFile;
 	}
 
 	public static File pearsonDecrypt(File file) {
