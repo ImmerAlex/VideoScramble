@@ -8,7 +8,7 @@ public class DecryptionAlgorithm
 		return file;
 	}
 
-	public static File eulerEncrypt(File file) {
+	public static File pearsonDecrypt(File file) {
 		return file;
 	}
 }
