@@ -42,6 +42,7 @@ public class FirstSceneController implements Controller
 			protected List<MediaView> call() throws Exception
 			{
 				File encryptedFile = EncryptionAlgorithm.encrypt(FILE);
+				Main.ENCYPTED_FILE = encryptedFile;
 				MediaView originalVideo = MediaViewFactory.getMediaView(FILE);
 				MediaView encryptedVideo = MediaViewFactory.getMediaView(encryptedFile);
 				return List.of(originalVideo, encryptedVideo);

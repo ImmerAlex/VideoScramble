@@ -12,6 +12,7 @@ public class Main
 	public static char MODE;
 	public static File FILE;
 	public static File OUTPUT_DIR;
+	public static File ENCYPTED_FILE;
 	public static int  OFFSET; // 0..255
 	public static int  STEP; // 0..127
 
