@@ -1,16 +1,17 @@
 package fr.aimmer.math;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.opencv.core.Mat;
 import org.opencv.videoio.VideoCapture;
 
+import fr.aimmer.utils.MathUtils;
+
 public class DecryptionAlgorithm {
 
-	public static File euclideDecrypt(File encryptedFile) throws IOException {
+	public static File euclideDecrypt(File encryptedFile) {
 		File decryptedFile = null;
 
 		// Charger la vidéo
@@ -18,7 +19,9 @@ public class DecryptionAlgorithm {
 
 		// Récupérer la première frame de la vidéo
 		Mat firstEncryptedVideoFrame = new Mat();
-		if (!encryptedVideoCapture.read(firstEncryptedVideoFrame)) {
+		//TODO: Comprendre pourquoi il ne récupère pas la première frame
+		// ou pourquoi cette méthode renvoi false ?
+		if (encryptedVideoCapture.read(firstEncryptedVideoFrame) == false) {
 			throw new RuntimeException("Impossible d'obtenir la première frame de la vidéo");
 		}
 
@@ -26,7 +29,7 @@ public class DecryptionAlgorithm {
 		for (int i = 0; i < firstEncryptedVideoFrame.rows() - 1; i++) {
 			Mat currentLine = firstEncryptedVideoFrame.row(i);
 			Mat nextLine = firstEncryptedVideoFrame.row(i+1);
-			// distances.add();
+			distances.add(MathUtils.euclideanDistance(currentLine, nextLine));
 		}
 
 		throw new UnsupportedOperationException("Methode de déchiffrage par Euclide en cours d'implémentation");

@@ -26,10 +26,15 @@ public class MathUtils {
 	/**
 	 *  Retourne la distance euclidienne entre deux lignes
 	 */
-	public double euclideanDistance(Mat ligne1, Mat ligne2) {
+	public static double euclideanDistance(Mat ligne1, Mat ligne2) {
 		double result = 0d;
 
-		// TODO: implemented method
+		System.out.println(ligne1.get(0,0));
+		// for (int i = 0; i < ligne1.cols(); i++) {
+		// 	Math.pow((ligne1.get(0,i) - ligne2.get(0,i)), 2);
+		// }
+		
+		// TODO: implement method
 		throw new UnsupportedOperationException();
 	}
 }
