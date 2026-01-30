@@ -21,7 +21,7 @@ import java.util.List;
 
 import static fr.aimmer.Main.*;
 
-public class FirstSceneController implements Controller
+public class EncryptionSceneController implements Controller
 {
 
 	@Override

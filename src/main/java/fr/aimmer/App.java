@@ -2,7 +2,7 @@ package fr.aimmer;
 
 import fr.aimmer.controller.EuclideSceneController;
 import fr.aimmer.controller.HomeController;
-import fr.aimmer.controller.FirstSceneController;
+import fr.aimmer.controller.EncryptionSceneController;
 import fr.aimmer.controller.PearsonSceneController;
 import fr.aimmer.listener.StageGlobalListener;
 import fr.aimmer.ui.scene.SceneManager;
@@ -26,7 +26,7 @@ public class App extends Application
 		sm.setStage(stage);
 
 		sm.register("home", new HomeController());
-		sm.register("scene:1", new FirstSceneController());
+		sm.register("scene:1", new EncryptionSceneController());
 		sm.register("scene:euclide", new EuclideSceneController());
 		sm.register("scene:pearson", new PearsonSceneController());
 
