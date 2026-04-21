@@ -24,17 +24,29 @@ public class MathUtils {
 	}
 
 	/**
-	 *  Retourne la distance euclidienne entre deux lignes
+	 * Calcule la distance euclidienne entre deux matrices.
+	 * <p>
+	 * d(x,y) = sqrt(sum((xi - yi)^2))
+	 * </p>
+	 *
+	 * @param ligne1 La première matrice (ligne)
+	 * @param ligne2 La seconde matrice (ligne)
+	 * @return La distance euclidienne entre les deux matrices
 	 */
 	public static double euclideanDistance(Mat ligne1, Mat ligne2) {
-		double result = 0d;
+		double sum = 0;
+		int cols = ligne1.cols();
 
-		System.out.println(ligne1.get(0,0));
-		// for (int i = 0; i < ligne1.cols(); i++) {
-		// 	Math.pow((ligne1.get(0,i) - ligne2.get(0,i)), 2);
-		// }
-		
-		// TODO: implement method
-		throw new UnsupportedOperationException();
+		for (int j = 0; j < cols; j++) {
+			double[] pixel1 = ligne1.get(0, j);
+			double[] pixel2 = ligne2.get(0, j);
+
+			for (int c = 0; c < pixel1.length; c++) {
+				double diff = pixel1[c] - pixel2[c];
+				sum += diff * diff;
+			}
+		}
+
+		return Math.sqrt(sum);
 	}
 }
