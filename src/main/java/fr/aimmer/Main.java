@@ -69,8 +69,8 @@ public class Main
 
 	private static void error(String msg)
 	{
-		System.err.println("Erreur: " + msg);
-		System.err.println("Utilisez --help pour plus d'informations.");
+		System.err.println("Erreur: " + msg + "\n");
+		printHelp();
 		System.exit(1);
 	}
 
