@@ -14,7 +14,7 @@ public class App extends Application
 {
 	public static void application(String[] args)
 	{
-		launch();
+		launch(App.class, args);
 	}
 
 	@Override

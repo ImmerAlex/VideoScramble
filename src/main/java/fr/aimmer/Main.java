@@ -18,49 +18,58 @@ public class Main
 
 	public static void main(String[] args)
 	{
-		if (args.length == 1 && ( args[0].equals("--help") || args[0].equals("--h") )) {
-			printHelp();
-			return;
-		}
+		if (args.length == 0) {
+			System.out.println("Aucun argument fourni. Utilisation des valeurs par défaut pour l'interface graphique.");
+			Main.MODE = 'C';
+			Main.FILE = new File("src/main/resources/video/Pencil_Candle_1280x720.mp4");
+			Main.OUTPUT_DIR = new File(".");
+			Main.OFFSET = 42;
+			Main.STEP = 13;
+		} else {
+			if (args.length == 1 && (args[0].equals("--help") || args[0].equals("--h"))) {
+				printHelp();
+				return;
+			}
 
-		if (args.length < 7) error("Nombre d'arguments insuffisant.");
+			if (args.length < 7) error("Nombre d'arguments insuffisant.");
 
-		try {
-			Main.MODE = args[0].charAt(0);
-			if (Main.MODE != 'C' && Main.MODE != 'D')
-				error("Le mode doit être 'C' (chiffrement) ou 'D' (déchiffrement).");
+			try {
+				Main.MODE = args[0].charAt(0);
+				if (Main.MODE != 'C' && Main.MODE != 'D')
+					error("Le mode doit être 'C' (chiffrement) ou 'D' (déchiffrement).");
 
-			File file = new File(args[1]);
-			if (!file.exists() || file.isDirectory()) error("Chemin de video invalide : " + args[1]);
-			Main.FILE = file;
+				File file = new File(args[1]);
+				if (!file.exists() || file.isDirectory()) error("Chemin de video invalide : " + args[1]);
+				Main.FILE = file;
 
-			File outDir = new File(args[2]);
-			if (!outDir.exists() || !outDir.isDirectory()) error("Dossier de sortie invalide : " + args[2]);
-			Main.OUTPUT_DIR = outDir;
+				File outDir = new File(args[2]);
+				if (!outDir.exists() || !outDir.isDirectory()) error("Dossier de sortie invalide : " + args[2]);
+				Main.OUTPUT_DIR = outDir;
 
-			for (int i = 3; i < args.length; i += 2) {
-				switch (args[i]) {
-					case "--r" -> {
-						Main.OFFSET = Integer.parseInt(args[i + 1]);
-						if (Main.OFFSET < 0 || Main.OFFSET > 255)
-							error("Le décalage r doit être compris entre 0 et 255.");
-					}
-					case "--s" -> {
-						Main.STEP = Integer.parseInt(args[i + 1]);
-						if (Main.STEP < 0 || Main.STEP > 127)
-							error("Le pas s doit être compris entre 0 et 127.");
-					}
-					default -> {
-						error("Option inconnue : " + args[i]);
+				for (int i = 3; i < args.length; i += 2) {
+					switch (args[i]) {
+						case "--r" -> {
+							Main.OFFSET = Integer.parseInt(args[i + 1]);
+							if (Main.OFFSET < 0 || Main.OFFSET > 255)
+								error("Le décalage r doit être compris entre 0 et 255.");
+						}
+						case "--s" -> {
+							Main.STEP = Integer.parseInt(args[i + 1]);
+							if (Main.STEP < 0 || Main.STEP > 127)
+								error("Le pas s doit être compris entre 0 et 127.");
+						}
+						default -> {
+							error("Option inconnue : " + args[i]);
+						}
 					}
 				}
+			} catch (NumberFormatException e) {
+				error("Format de nombre invalide dans les options.");
+			} catch (ArrayIndexOutOfBoundsException e) {
+				error("Valeur manquante pour une option.");
+			} catch (Exception e) {
+				error("Erreur lors de l'analyse des arguments : " + e.getMessage());
 			}
-		} catch (NumberFormatException e) {
-			error("Format de nombre invalide dans les options.");
-		} catch (ArrayIndexOutOfBoundsException e) {
-			error("Valeur manquante pour une option.");
-		} catch (Exception e) {
-			error("Erreur lors de l'analyse des arguments : " + e.getMessage());
 		}
 
 		OpenCV.loadLocally();

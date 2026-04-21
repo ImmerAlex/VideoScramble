@@ -12,7 +12,6 @@
     <maven.compiler.release>23</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javafx.version>17.0.9</javafx.version>
-    <app.arg>1280 720 video/Pencil_Candle_1280x720.mp4</app.arg>
   </properties>
 
   <dependencies>
@@ -73,7 +72,6 @@
         <version>0.0.8</version>
         <configuration>
           <mainClass>fr.aimmer.Main</mainClass>
-          <commandlineArgs>${app.arg}</commandlineArgs>
         </configuration>
       </plugin>
     </plugins>
