@@ -14,61 +14,75 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
 import java.util.List;
+import java.util.function.Function;
 
 public class DecryptionSelectionController implements Controller
 {
-	// Ajouter ici les futurs algorithmes de déchiffrement
-	private record DecryptionType(String label, String description, String sceneId) {}
+    private static final List<DecryptionType> TYPES = List.of(
+            new DecryptionType("Euclide", "Force brute — distance euclidienne entre lignes",
+                    "scene:decryption:euclide", EuclideSceneController::new),
+            new DecryptionType("Pearson", "Force brute — corrélation de Pearson (TODO)",
+                    "scene:decryption:pearson", PearsonSceneController::new)
+    );
+    private final AppConfig config;
 
-	private static final List<DecryptionType> TYPES = List.of(
-			new DecryptionType("Euclide",  "Force brute — distance euclidienne entre lignes", "scene:decryption:euclide"),
-			new DecryptionType("Pearson",  "Force brute — corrélation de Pearson (TODO)",     "scene:decryption:pearson")
-	);
+    public DecryptionSelectionController(AppConfig config)
+    {
+        this.config = config;
+    }
 
-	private final AppConfig config;
+    @Override
+    public Scene get()
+    {
+        VBox root = new VBox(20);
+        root.setAlignment(Pos.CENTER);
+        root.setPadding(new Insets(40));
 
-	public DecryptionSelectionController(AppConfig config)
-	{
-		this.config = config;
-	}
+        Label title = new Label("Méthode de déchiffrement");
+        title.setFont(Font.font("System", FontWeight.BOLD, 18));
+        root.getChildren().add(title);
 
-	@Override
-	public Scene get()
-	{
-		VBox root = new VBox(20);
-		root.setAlignment(Pos.CENTER);
-		root.setPadding(new Insets(40));
+        for (DecryptionType type : TYPES) {
+            root.getChildren().add(buildCard(type));
+        }
 
-		Label title = new Label("Méthode de déchiffrement");
-		title.setFont(Font.font("System", FontWeight.BOLD, 18));
-		root.getChildren().add(title);
+        root.getChildren().add(new GoHomeButton());
 
-		for (DecryptionType type : TYPES) {
-			VBox card = buildCard(type);
-			root.getChildren().add(card);
-		}
+        return new Scene(root, Main.WIDTH, Main.HEIGHT);
+    }
 
-		root.getChildren().add(new GoHomeButton());
+    private VBox buildCard(DecryptionType type)
+    {
+        Label nameLabel = new Label(type.label());
+        nameLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
 
-		return new Scene(root, Main.WIDTH, Main.HEIGHT);
-	}
+        Label descLabel = new Label(type.description());
 
-	private VBox buildCard(DecryptionType type)
-	{
-		Label nameLabel = new Label(type.label());
-		nameLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
+        Button launchButton = new Button("Sélectionner →");
+        launchButton.setOnAction(_ ->
+        {
+            SceneManager sm = SceneManager.getInstance();
+            sm.register("scene:decryption:file-selection",
+                    new EncryptedFileSelectionController(config, type.sceneId(), type.factory()));
+            sm.switchTo("scene:decryption:file-selection");
+        });
 
-		Label descLabel = new Label(type.description());
+        VBox card = new VBox(6, nameLabel, descLabel, launchButton);
+        card.setAlignment(Pos.CENTER_LEFT);
+        card.setPadding(new Insets(12, 20, 12, 20));
+        card.setStyle("-fx-border-color: #cccccc; -fx-border-radius: 6; -fx-background-radius: 6;");
+        card.setMaxWidth(500);
 
-		Button launchButton = new Button("Sélectionner →");
-		launchButton.setOnAction(_ -> SceneManager.getInstance().switchTo(type.sceneId()));
+        return card;
+    }
 
-		VBox card = new VBox(6, nameLabel, descLabel, launchButton);
-		card.setAlignment(Pos.CENTER_LEFT);
-		card.setPadding(new Insets(12, 20, 12, 20));
-		card.setStyle("-fx-border-color: #cccccc; -fx-border-radius: 6; -fx-background-radius: 6;");
-		card.setMaxWidth(500);
-
-		return card;
-	}
+    // Ajouter ici les futurs algorithmes de déchiffrement
+    private record DecryptionType(
+            String label,
+            String description,
+            String sceneId,
+            Function<AppConfig, Controller> factory
+    )
+    {
+    }
 }

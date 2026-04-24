@@ -44,11 +44,7 @@ public class EuclideSceneController implements Controller
 
         Scene scene = new Scene(root, Main.WIDTH, Main.HEIGHT);
 
-        // En mode GUI, l'utilisateur passe d'abord par la scène de chiffrement.
-        // On cherche le fichier chiffré dans le dossier de sortie.
-        File cryptedDir    = new File(config.outputDir(), "generated/crypted");
-        File encryptedFile = new File(cryptedDir, "encrypted_" + config.inputFile().getName());
-        File fileToDecrypt = encryptedFile.exists() ? encryptedFile : config.inputFile();
+        File fileToDecrypt = config.inputFile();
 
         Task<List<MediaView>> task = new Task<>()
         {
