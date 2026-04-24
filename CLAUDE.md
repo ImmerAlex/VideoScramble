@@ -2,6 +2,8 @@
 
 Application JavaFX de chiffrement/déchiffrement vidéo inspirée des systèmes de brouillage analogique historiques (Canal+ Discret 11, Nagravision). Projet académique en cours de développement.
 
+Lien consigne : https://info.iut-bm.univ-fcomte.fr/staff/perrot/DUT-INFO/S5/PMMEDIA/cracKey/assignment.html
+
 ## Commandes essentielles
 
 ```bash
