@@ -11,7 +11,10 @@ import java.util.function.IntConsumer;
 
 public class DecryptionAlgorithm
 {
-    private static final int SAMPLE_COUNT = 5;
+    private static final int SAMPLE_COUNT   = 5;
+    // 1 colonne sur COLUMN_STRIDE : 4× moins de calculs par paire de lignes,
+    // sans perte significative de précision pour la comparaison de lissé.
+    private static final int COLUMN_STRIDE  = 4;
 
     /**
      * Casse la clé par force brute (distance euclidienne) puis déchiffre la vidéo.
@@ -80,6 +83,7 @@ public class DecryptionAlgorithm
         int step = Math.max(1, (end - start) / SAMPLE_COUNT);
 
         Mat frame = new Mat();
+        byte[] fullRow = null;
         for (int i = 0; i < SAMPLE_COUNT; i++) {
             int pos = start + i * step;
             if (pos >= totalFrames) break;
@@ -87,12 +91,18 @@ public class DecryptionAlgorithm
             capture.set(Videoio.CAP_PROP_POS_FRAMES, pos);
             if (!capture.read(frame) || frame.empty()) continue;
 
-            int height = frame.rows();
-            int cols = frame.cols();
-            int channels = frame.channels();
-            byte[][] rows = new byte[height][cols * channels];
+            int height   = frame.rows();
+            int rowBytes = frame.cols() * frame.channels();
+            int sampled  = (rowBytes + COLUMN_STRIDE - 1) / COLUMN_STRIDE;
+
+            if (fullRow == null || fullRow.length != rowBytes)
+                fullRow = new byte[rowBytes];
+
+            byte[][] rows = new byte[height][sampled];
             for (int r = 0; r < height; r++) {
-                frame.get(r, 0, rows[r]);
+                frame.get(r, 0, fullRow);
+                for (int c = 0, ci = 0; c < rowBytes; c += COLUMN_STRIDE, ci++)
+                    rows[r][ci] = fullRow[c];
             }
             frames.add(rows);
         }
