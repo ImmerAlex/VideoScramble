@@ -6,14 +6,13 @@ import javafx.scene.media.MediaView;
 
 import java.io.File;
 
-import static fr.aimmer.Main.WIDTH;
-
 public class MediaViewFactory
 {
-	public static MediaView getMediaView(File file) {
-		Media media = new Media(file.toURI().toString());
+	public static MediaView getMediaView(File file)
+	{
+		Media       media       = new Media(file.toURI().toString());
 		MediaPlayer mediaPlayer = new MediaPlayer(media);
-		MediaView mediaView = new MediaView(mediaPlayer);
+		MediaView   mediaView   = new MediaView(mediaPlayer);
 		mediaView.preserveRatioProperty().set(true);
 		mediaPlayer.play();
 

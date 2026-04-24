@@ -5,10 +5,9 @@ import javafx.scene.control.Button;
 
 public class GoHomeButton extends Button
 {
-	public GoHomeButton() {
+	public GoHomeButton()
+	{
 		super("Home");
-		this.setOnAction(_ -> {
-			SceneManager.getInstance().switchTo("home", true);
-		});
+		this.setOnAction(_ -> SceneManager.getInstance().switchTo("home", true));
 	}
 }

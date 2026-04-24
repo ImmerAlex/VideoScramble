@@ -18,21 +18,19 @@ public class HomeController implements Controller
 		VBox root = new VBox(20);
 		root.setAlignment(Pos.CENTER);
 
-		Button button = new Button("Vidéo encryptée");
-		button.setOnAction(_ -> SceneManager.getInstance().switchTo("scene:1"));
-		button.setPadding(new Insets(10, 40, 10, 40));
-		root.getChildren().add(button);
+		Button encryptButton = new Button("Vidéo encryptée");
+		encryptButton.setOnAction(_ -> SceneManager.getInstance().switchTo("scene:1"));
+		encryptButton.setPadding(new Insets(10, 40, 10, 40));
 
-		button = new Button("Decryptage Euclide");
-		button.setOnAction(_ -> SceneManager.getInstance().switchTo("scene:euclide"));
-		button.setPadding(new Insets(10, 40, 10, 40));
-		root.getChildren().add(button);
+		Button euclideButton = new Button("Décryptage Euclide");
+		euclideButton.setOnAction(_ -> SceneManager.getInstance().switchTo("scene:euclide"));
+		euclideButton.setPadding(new Insets(10, 40, 10, 40));
 
-		button = new Button("Decryptage Pearson");
-		button.setOnAction(_ -> SceneManager.getInstance().switchTo("scene:pearson"));
-		button.setPadding(new Insets(10, 40, 10, 40));
-		root.getChildren().add(button);
+		Button pearsonButton = new Button("Décryptage Pearson");
+		pearsonButton.setOnAction(_ -> SceneManager.getInstance().switchTo("scene:pearson"));
+		pearsonButton.setPadding(new Insets(10, 40, 10, 40));
 
+		root.getChildren().addAll(encryptButton, euclideButton, pearsonButton);
 
 		return new Scene(root, WIDTH, HEIGHT);
 	}

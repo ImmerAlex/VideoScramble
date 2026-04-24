@@ -1,5 +1,6 @@
 package fr.aimmer.controller;
 
+import fr.aimmer.AppConfig;
 import fr.aimmer.Main;
 import fr.aimmer.math.EncryptionAlgorithm;
 import fr.aimmer.utils.MediaViewFactory;
@@ -19,74 +20,74 @@ import javafx.scene.text.FontWeight;
 import java.io.File;
 import java.util.List;
 
-import static fr.aimmer.Main.*;
-
 public class EncryptionSceneController implements Controller
 {
+	private final AppConfig config;
+
+	public EncryptionSceneController(AppConfig config)
+	{
+		this.config = config;
+	}
 
 	@Override
 	public Scene get()
 	{
-		VBox root = new VBox(20); // espacement vertical entre les éléments
-		root.setAlignment(Pos.CENTER); // centre tout verticalement et horizontalement
+		VBox root = new VBox(20);
+		root.setAlignment(Pos.CENTER);
 
-		// Loader
 		ProgressIndicator loader = new ProgressIndicator();
 		root.getChildren().add(loader);
 
-		Scene scene = new Scene(root, WIDTH, HEIGHT);
+		Scene scene = new Scene(root, Main.WIDTH, Main.HEIGHT);
 
-		Task<List<MediaView>> loadVideosTask = new Task<>()
+		Task<List<MediaView>> task = new Task<>()
 		{
 			@Override
 			protected List<MediaView> call() throws Exception
 			{
-				File encryptedFile = EncryptionAlgorithm.encrypt(FILE);
-				Main.ENCYPTED_FILE = encryptedFile;
-				MediaView originalVideo = MediaViewFactory.getMediaView(FILE);
-				MediaView encryptedVideo = MediaViewFactory.getMediaView(encryptedFile);
-				return List.of(originalVideo, encryptedVideo);
+				File processedFile = config.mode() == 'C'
+						? EncryptionAlgorithm.encrypt(config.inputFile(), config.outputDir(), config.offset(), config.step())
+						: EncryptionAlgorithm.decrypt(config.inputFile(), config.outputDir(), config.offset(), config.step());
+
+				MediaView originalView  = MediaViewFactory.getMediaView(config.inputFile());
+				MediaView processedView = MediaViewFactory.getMediaView(processedFile);
+				return List.of(originalView, processedView);
 			}
 		};
 
-		loadVideosTask.setOnSucceeded(event -> {
-			List<MediaView> videos = loadVideosTask.getValue();
+		task.setOnSucceeded(event -> {
+			List<MediaView> videos = task.getValue();
 			root.getChildren().clear();
 
-			// OFFSET et STEP dans un HBox, centrés
-			Label offsetLabel = new Label("OFFSET: " + Main.OFFSET);
+			Label offsetLabel = new Label("OFFSET: " + config.offset());
 			offsetLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
-			Label stepLabel = new Label("STEP: " + Main.STEP);
+			Label stepLabel = new Label("STEP: " + config.step());
 			stepLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
 
 			HBox topLabels = new HBox(20, offsetLabel, stepLabel);
-			topLabels.setAlignment(Pos.CENTER); // centre horizontalement
+			topLabels.setAlignment(Pos.CENTER);
 			root.getChildren().add(topLabels);
 
-			// HBox pour les vidéos
 			HBox videoBox = new HBox(20, videos.get(0), videos.get(1));
 			videoBox.setAlignment(Pos.CENTER);
 			root.getChildren().add(videoBox);
 
-			// Adapter la largeur des vidéos pour qu’elles prennent chacune la moitié
 			videos.get(0).fitWidthProperty().bind(videoBox.widthProperty().subtract(videoBox.getSpacing()).divide(2));
 			videos.get(1).fitWidthProperty().bind(videoBox.widthProperty().subtract(videoBox.getSpacing()).divide(2));
 			videos.get(0).setPreserveRatio(true);
 			videos.get(1).setPreserveRatio(true);
 
-			// Bouton Back Home en bas, centré
 			GoHomeButton goHomeButton = new GoHomeButton();
 			root.getChildren().add(goHomeButton);
 			VBox.setMargin(goHomeButton, new Insets(20, 0, 0, 0));
 		});
 
-		loadVideosTask.setOnFailed(event -> {
+		task.setOnFailed(event -> {
 			root.getChildren().clear();
-			Label errorLabel = new Label("Erreur lors du chargement des vidéos");
-			root.getChildren().add(errorLabel);
+			root.getChildren().add(new Label("Erreur : " + task.getException().getMessage()));
 		});
 
-		new Thread(loadVideosTask).start();
+		new Thread(task).start();
 
 		return scene;
 	}

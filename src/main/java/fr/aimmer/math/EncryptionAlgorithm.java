@@ -1,6 +1,5 @@
 package fr.aimmer.math;
 
-import fr.aimmer.Main;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.videoio.VideoCapture;
@@ -13,21 +12,24 @@ import static fr.aimmer.utils.MathUtils.largestPowerOfTwo;
 
 public class EncryptionAlgorithm
 {
-	/**
-	 * Encrypt la vidéo style 'canal+' et retourne l'URL de la nouvelle vidéo
-	 *
-	 * @param file Chemin vers la vidéo à encrypter
-	 *
-	 * @return File - La nouvelle vidéo encrypter
-	 */
-	public static File encrypt(File file)
+	public static File encrypt(File inputFile, File outputDir, int offset, int step)
 	{
-		VideoCapture capture = new VideoCapture(file.getAbsolutePath());
+		return process(inputFile, outputDir, "encrypted_", offset, step);
+	}
 
-		File outputFile = new File(Main.OUTPUT_DIR, ( Main.MODE == 'C' ? "encrypted_" : "decrypted_" ) + file.getName());
-		int width = (int) capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
-		int height = (int) capture.get(Videoio.CAP_PROP_FRAME_HEIGHT);
-		int fps = (int) capture.get(Videoio.CAP_PROP_FPS);
+	public static File decrypt(File inputFile, File outputDir, int offset, int step)
+	{
+		return process(inputFile, outputDir, "decrypted_", offset, step);
+	}
+
+	private static File process(File inputFile, File outputDir, String prefix, int offset, int step)
+	{
+		VideoCapture capture = new VideoCapture(inputFile.getAbsolutePath());
+
+		File outputFile = new File(outputDir, prefix + inputFile.getName());
+		int  width      = (int) capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
+		int  height     = (int) capture.get(Videoio.CAP_PROP_FRAME_HEIGHT);
+		int  fps        = (int) capture.get(Videoio.CAP_PROP_FPS);
 
 		VideoWriter writer = new VideoWriter(
 				outputFile.getAbsolutePath(),
@@ -36,14 +38,14 @@ public class EncryptionAlgorithm
 				new Size(width, height)
 		);
 
-		int[] rowMapping = computeRowMapping(height, Main.OFFSET, Main.STEP);
+		int[] rowMapping = computeRowMapping(height, offset, step);
 
-		Mat frame = new Mat();
-		Mat encrypted = new Mat();
+		Mat frame    = new Mat();
+		Mat permuted = new Mat();
 
 		while (capture.read(frame)) {
-			applyRowPermutation(frame, encrypted, rowMapping);
-			writer.write(encrypted);
+			applyRowPermutation(frame, permuted, rowMapping);
+			writer.write(permuted);
 		}
 
 		capture.release();
@@ -52,12 +54,13 @@ public class EncryptionAlgorithm
 		return outputFile;
 	}
 
-	private static int[] computeRowMapping(int height, int offset, int step)
+	// package-private pour les tests unitaires
+	static int[] computeRowMapping(int height, int offset, int step)
 	{
-		int[] mapping = new int[height];
-		int base = 0;
-		int remaining = height;
-		int destIndex = 0;
+		int[] mapping  = new int[height];
+		int   base      = 0;
+		int   remaining = height;
+		int   destIndex = 0;
 
 		while (remaining > 1) {
 			int blockSize = largestPowerOfTwo(remaining);
@@ -67,7 +70,7 @@ public class EncryptionAlgorithm
 				mapping[destIndex++] = dst;
 			}
 
-			base += blockSize;
+			base      += blockSize;
 			remaining -= blockSize;
 		}
 

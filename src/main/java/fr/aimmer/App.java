@@ -1,8 +1,8 @@
 package fr.aimmer;
 
+import fr.aimmer.controller.EncryptionSceneController;
 import fr.aimmer.controller.EuclideSceneController;
 import fr.aimmer.controller.HomeController;
-import fr.aimmer.controller.EncryptionSceneController;
 import fr.aimmer.controller.PearsonSceneController;
 import fr.aimmer.listener.StageGlobalListener;
 import fr.aimmer.ui.scene.SceneManager;
@@ -12,9 +12,17 @@ import javafx.stage.Stage;
 
 public class App extends Application
 {
-	public static void application(String[] args)
+	private static AppConfig config;
+
+	public static void application(AppConfig appConfig, String[] args)
 	{
+		config = appConfig;
 		launch(App.class, args);
+	}
+
+	public static AppConfig getConfig()
+	{
+		return config;
 	}
 
 	@Override
@@ -26,9 +34,9 @@ public class App extends Application
 		sm.setStage(stage);
 
 		sm.register("home", new HomeController());
-		sm.register("scene:1", new EncryptionSceneController());
-		sm.register("scene:euclide", new EuclideSceneController());
-		sm.register("scene:pearson", new PearsonSceneController());
+		sm.register("scene:1", new EncryptionSceneController(config));
+		sm.register("scene:euclide", new EuclideSceneController(config));
+		sm.register("scene:pearson", new PearsonSceneController(config));
 
 		sm.switchTo("home", true);
 		stage.show();
