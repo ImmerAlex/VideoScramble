@@ -14,16 +14,18 @@ public class EncryptionAlgorithm
 {
     public static File encrypt(File inputFile, File outputDir, int offset, int step)
     {
-        return process(inputFile, outputDir, "encrypted_", offset, step, false);
+        return process(inputFile, new File(outputDir, "generated/crypted"), "encrypted_", offset, step, false);
     }
 
     public static File decrypt(File inputFile, File outputDir, int offset, int step)
     {
-        return process(inputFile, outputDir, "decrypted_", offset, step, true);
+        return process(inputFile, new File(outputDir, "generated/decrypted"), "decrypted_", offset, step, true);
     }
 
     private static File process(File inputFile, File outputDir, String prefix, int offset, int step, boolean inverse)
     {
+        outputDir.mkdirs();
+
         VideoCapture capture = new VideoCapture(inputFile.getAbsolutePath());
 
         File outputFile = new File(outputDir, prefix + inputFile.getName());

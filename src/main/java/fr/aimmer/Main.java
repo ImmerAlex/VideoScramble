@@ -18,7 +18,7 @@ public class Main
 			config = new AppConfig(
 					'C',
 					new File("src/main/resources/video/Pencil_Candle_1280x720.mp4"),
-					new File("."),
+					new File("src/main/resources"),
 					42,
 					13
 			);
