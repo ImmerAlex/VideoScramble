@@ -2,8 +2,8 @@ package fr.aimmer.controller;
 
 import fr.aimmer.AppConfig;
 import fr.aimmer.Main;
-import fr.aimmer.math.DecryptionAlgorithm;
-import fr.aimmer.math.DecryptionAlgorithm.BruteForceResult;
+import fr.aimmer.math.BruteForceResult;
+import fr.aimmer.math.DecryptionMethod;
 import fr.aimmer.utils.MediaViewFactory;
 import fr.aimmer.view.GoHomeButton;
 import javafx.concurrent.Task;
@@ -21,13 +21,22 @@ import javafx.scene.text.FontWeight;
 import java.io.File;
 import java.util.List;
 
-public class EuclideSceneController implements Controller
+/**
+ * Scène générique de résultat pour une attaque par force brute.
+ * <p>
+ * Paramétrée par le {@link DecryptionMethod} à appliquer — ajouter une nouvelle
+ * métrique ne nécessite pas de nouveau controller, juste une nouvelle entrée
+ * dans {@link DecryptionSelectionController}.
+ */
+public class BruteForceSceneController implements Controller
 {
     private final AppConfig config;
+    private final DecryptionMethod attack;
 
-    public EuclideSceneController(AppConfig config)
+    public BruteForceSceneController(AppConfig config, DecryptionMethod attack)
     {
         this.config = config;
+        this.attack = attack;
     }
 
     @Override
@@ -36,7 +45,9 @@ public class EuclideSceneController implements Controller
         VBox root = new VBox(20);
         root.setAlignment(Pos.CENTER);
 
-        Label statusLabel = new Label("Recherche de la clé par force brute (32 768 combinaisons)…");
+        Label statusLabel = new Label(
+                "Méthode : " + attack.displayName()
+                + " — recherche de la clé sur " + attack.totalKeys() + " combinaisons…");
         ProgressBar progressBar = new ProgressBar(0);
         progressBar.setPrefWidth(400);
 
@@ -51,10 +62,10 @@ public class EuclideSceneController implements Controller
             @Override
             protected List<MediaView> call() throws Exception
             {
-                BruteForceResult result = DecryptionAlgorithm.euclideDecrypt(
+                BruteForceResult result = attack.attack(
                         fileToDecrypt,
                         config.outputDir(),
-                        done -> updateProgress(done, 256 * 128)
+                        done -> updateProgress(done, attack.totalKeys())
                 );
 
                 MediaView encryptedView = MediaViewFactory.getMediaView(fileToDecrypt);
@@ -71,6 +82,9 @@ public class EuclideSceneController implements Controller
             List<MediaView> videos = task.getValue();
             root.getChildren().clear();
 
+            Label methodLabel = new Label("Méthode : " + attack.displayName());
+            methodLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
+
             String[] keyParts = task.getMessage().split(":");
             Label offsetLabel = new Label("OFFSET: " + keyParts[0]);
             offsetLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
@@ -79,7 +93,7 @@ public class EuclideSceneController implements Controller
 
             HBox topLabels = new HBox(20, offsetLabel, stepLabel);
             topLabels.setAlignment(Pos.CENTER);
-            root.getChildren().add(topLabels);
+            root.getChildren().addAll(methodLabel, topLabels);
 
             HBox videoBox = new HBox(20, videos.get(0), videos.get(1));
             videoBox.setAlignment(Pos.CENTER);

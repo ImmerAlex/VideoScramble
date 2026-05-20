@@ -9,27 +9,53 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntConsumer;
 
-public class DecryptionAlgorithm
+/**
+ * Attaque brute force sur un chiffrement de type Nagravision.
+ * <p>
+ * Parcourt les 256×128 = 32 768 clés possibles, reconstitue virtuellement
+ * la frame déchiffrée et utilise une {@link RowScoringFunction} pour évaluer
+ * à quel point chaque candidat ressemble à une image naturelle (lignes
+ * adjacentes proches). La clé minimisant la somme des scores est retenue.
+ * <p>
+ * Le score est moyenné sur plusieurs frames réparties dans la vidéo pour
+ * éviter d'être trompé par une frame d'intro/outro ou un fond uni.
+ * <p>
+ * Le paradigme "exploration de clé + scoring de lissé" est partagé : seule
+ * la fonction de scoring change entre les attaques (Euclide, Pearson, L1…).
+ */
+public class NagravisionBruteForce implements DecryptionMethod
 {
+    private static final int OFFSET_MAX     = 255;
+    private static final int STEP_MAX       = 127;
+    private static final int TOTAL_KEYS     = (OFFSET_MAX + 1) * (STEP_MAX + 1);
     private static final int SAMPLE_COUNT   = 5;
     // 1 colonne sur COLUMN_STRIDE : 4× moins de calculs par paire de lignes,
     // sans perte significative de précision pour la comparaison de lissé.
     private static final int COLUMN_STRIDE  = 4;
 
-    /**
-     * Casse la clé par force brute (distance euclidienne) puis déchiffre la vidéo.
-     * <p>
-     * Pour chacune des 256×128 = 32 768 clés possibles, on reconstitue virtuellement
-     * la frame déchiffrée et on calcule la somme des distances euclidiennes entre
-     * lignes consécutives. Une image naturelle a des lignes proches, donc la clé
-     * ayant le score minimal est la meilleure candidate.
-     * <p>
-     * Le score est moyenné sur plusieurs frames réparties dans la vidéo pour éviter
-     * d'être trompé par une frame d'intro/outro ou un fond uni.
-     *
-     * @param progressCallback appelé avec le nombre de clés testées (0..32768), peut être null
-     */
-    public static BruteForceResult euclideDecrypt(File encryptedFile, File outputDir, IntConsumer progressCallback)
+    private final String displayName;
+    private final RowScoringFunction scoring;
+
+    public NagravisionBruteForce(String displayName, RowScoringFunction scoring)
+    {
+        this.displayName = displayName;
+        this.scoring = scoring;
+    }
+
+    @Override
+    public String displayName()
+    {
+        return displayName;
+    }
+
+    @Override
+    public int totalKeys()
+    {
+        return TOTAL_KEYS;
+    }
+
+    @Override
+    public BruteForceResult attack(File encryptedFile, File outputDir, IntConsumer progressCallback)
     {
         VideoCapture capture = new VideoCapture(encryptedFile.getAbsolutePath());
 
@@ -50,14 +76,14 @@ public class DecryptionAlgorithm
         double bestScore = Double.MAX_VALUE;
         int done = 0;
 
-        for (int offset = 0; offset <= 255; offset++) {
-            for (int step = 0; step <= 127; step++) {
-                double score = 0;
+        for (int offset = 0; offset <= OFFSET_MAX; offset++) {
+            for (int step = 0; step <= STEP_MAX; step++) {
+                double frameScore = 0;
                 for (byte[][] rows : sampledFrames) {
-                    score += scoreEuclidean(rows, height, offset, step);
+                    frameScore += scoreCandidate(rows, height, offset, step);
                 }
-                if (score < bestScore) {
-                    bestScore = score;
+                if (frameScore < bestScore) {
+                    bestScore = frameScore;
                     bestOffset = offset;
                     bestStep = step;
                 }
@@ -68,12 +94,14 @@ public class DecryptionAlgorithm
             }
         }
 
-        File outputFile = EncryptionAlgorithm.decrypt(encryptedFile, outputDir, bestOffset, bestStep);
+        File outputFile = new NagravisionAlgorithm(bestOffset, bestStep).decrypt(encryptedFile, outputDir);
         return new BruteForceResult(outputFile, bestOffset, bestStep);
     }
 
-    // Échantillonne SAMPLE_COUNT frames réparties entre 20 % et 80 % de la vidéo
-    // pour éviter les frames d'intro/outro souvent uniformes.
+    /**
+     * Échantillonne SAMPLE_COUNT frames réparties entre 20 % et 80 % de la vidéo
+     * pour éviter les frames d'intro/outro souvent uniformes.
+     */
     private static List<byte[][]> sampleFrames(VideoCapture capture, int totalFrames)
     {
         List<byte[][]> frames = new ArrayList<>();
@@ -111,31 +139,18 @@ public class DecryptionAlgorithm
     }
 
     /**
-     * Score d'une clé candidate : somme des distances euclidiennes entre lignes
-     * consécutives de l'image reconstituée. Plus le score est bas, mieux c'est.
+     * Score d'une clé candidate : somme des scores de la fonction injectée
+     * entre lignes consécutives de l'image reconstituée. Plus le score est bas,
+     * mieux c'est.
      */
-    private static double scoreEuclidean(byte[][] rows, int height, int offset, int step)
+    private double scoreCandidate(byte[][] rows, int height, int offset, int step)
     {
-        int[] mapping = EncryptionAlgorithm.computeRowMapping(height, offset, step);
+        int[] mapping = NagravisionAlgorithm.computeRowMapping(height, offset, step);
 
         double total = 0;
         for (int i = 0; i < height - 1; i++) {
-            total += rowDistance(rows[mapping[i]], rows[mapping[i + 1]]);
+            total += scoring.score(rows[mapping[i]], rows[mapping[i + 1]]);
         }
         return total;
-    }
-
-    private static double rowDistance(byte[] row1, byte[] row2)
-    {
-        double sum = 0;
-        for (int i = 0; i < row1.length; i++) {
-            double diff = (row1[i] & 0xFF) - (row2[i] & 0xFF);
-            sum += diff * diff;
-        }
-        return Math.sqrt(sum);
-    }
-
-    public record BruteForceResult(File outputFile, int offset, int step)
-    {
     }
 }

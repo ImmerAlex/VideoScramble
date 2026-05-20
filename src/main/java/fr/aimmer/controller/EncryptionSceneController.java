@@ -2,7 +2,7 @@ package fr.aimmer.controller;
 
 import fr.aimmer.AppConfig;
 import fr.aimmer.Main;
-import fr.aimmer.math.EncryptionAlgorithm;
+import fr.aimmer.math.EncryptionMethod;
 import fr.aimmer.utils.MediaViewFactory;
 import fr.aimmer.view.GoHomeButton;
 import javafx.concurrent.Task;
@@ -23,10 +23,12 @@ import java.util.List;
 public class EncryptionSceneController implements Controller
 {
 	private final AppConfig config;
+	private final EncryptionMethod algo;
 
-	public EncryptionSceneController(AppConfig config)
+	public EncryptionSceneController(AppConfig config, EncryptionMethod algo)
 	{
 		this.config = config;
+		this.algo = algo;
 	}
 
 	@Override
@@ -46,8 +48,8 @@ public class EncryptionSceneController implements Controller
 			protected List<MediaView> call() throws Exception
 			{
 				File processedFile = config.mode() == 'C'
-						? EncryptionAlgorithm.encrypt(config.inputFile(), config.outputDir(), config.offset(), config.step())
-						: EncryptionAlgorithm.decrypt(config.inputFile(), config.outputDir(), config.offset(), config.step());
+						? algo.encrypt(config.inputFile(), config.outputDir())
+						: algo.decrypt(config.inputFile(), config.outputDir());
 
 				MediaView originalView  = MediaViewFactory.getMediaView(config.inputFile());
 				MediaView processedView = MediaViewFactory.getMediaView(processedFile);
@@ -59,6 +61,9 @@ public class EncryptionSceneController implements Controller
 			List<MediaView> videos = task.getValue();
 			root.getChildren().clear();
 
+			Label algoLabel = new Label("Algorithme : " + algo.displayName());
+			algoLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
+
 			Label offsetLabel = new Label("OFFSET: " + config.offset());
 			offsetLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
 			Label stepLabel = new Label("STEP: " + config.step());
@@ -66,7 +71,7 @@ public class EncryptionSceneController implements Controller
 
 			HBox topLabels = new HBox(20, offsetLabel, stepLabel);
 			topLabels.setAlignment(Pos.CENTER);
-			root.getChildren().add(topLabels);
+			root.getChildren().addAll(algoLabel, topLabels);
 
 			HBox videoBox = new HBox(20, videos.get(0), videos.get(1));
 			videoBox.setAlignment(Pos.CENTER);

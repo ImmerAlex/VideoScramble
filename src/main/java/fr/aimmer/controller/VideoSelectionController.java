@@ -2,6 +2,7 @@ package fr.aimmer.controller;
 
 import fr.aimmer.AppConfig;
 import fr.aimmer.Main;
+import fr.aimmer.math.EncryptionMethod;
 import fr.aimmer.ui.scene.SceneManager;
 import fr.aimmer.view.GoHomeButton;
 import javafx.geometry.Insets;
@@ -22,14 +23,20 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 public class VideoSelectionController implements Controller
 {
 	private final AppConfig config;
+	private final String algoLabel;
+	private final Function<AppConfig, EncryptionMethod> algoFactory;
 
-	public VideoSelectionController(AppConfig config)
+	public VideoSelectionController(AppConfig config, String algoLabel,
+	                                Function<AppConfig, EncryptionMethod> algoFactory)
 	{
 		this.config = config;
+		this.algoLabel = algoLabel;
+		this.algoFactory = algoFactory;
 	}
 
 	@Override
@@ -38,6 +45,9 @@ public class VideoSelectionController implements Controller
 		VBox root = new VBox(20);
 		root.setAlignment(Pos.TOP_CENTER);
 		root.setPadding(new Insets(30, 60, 30, 60));
+
+		Label title = new Label("Chiffrement : " + algoLabel);
+		title.setFont(Font.font("System", FontWeight.BOLD, 16));
 
 		// --- Sélection via explorateur de fichiers ---
 		Label browseTitle = new Label("Fichier sélectionné :");
@@ -101,7 +111,7 @@ public class VideoSelectionController implements Controller
 			}
 		});
 
-		// Lancement du chiffrement avec le fichier retenu
+		// Lancement du chiffrement avec le fichier retenu et l'algo sélectionné
 		launchButton.setOnAction(_ ->
 		{
 			AppConfig newConfig = new AppConfig(
@@ -111,12 +121,13 @@ public class VideoSelectionController implements Controller
 					config.offset(),
 					config.step()
 			);
+			EncryptionMethod algo = algoFactory.apply(newConfig);
 			SceneManager sm = SceneManager.getInstance();
-			sm.register("scene:encryption", new EncryptionSceneController(newConfig));
+			sm.register("scene:encryption", new EncryptionSceneController(newConfig, algo));
 			sm.switchTo("scene:encryption");
 		});
 
-		root.getChildren().addAll(browseTitle, browseBox, listTitle, videoList, launchButton, new GoHomeButton());
+		root.getChildren().addAll(title, browseTitle, browseBox, listTitle, videoList, launchButton, new GoHomeButton());
 
 		return new Scene(root, Main.WIDTH, Main.HEIGHT);
 	}

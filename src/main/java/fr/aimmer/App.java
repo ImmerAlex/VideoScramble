@@ -32,12 +32,9 @@ public class App extends Application
 
         sm.register("home", new HomeController());
 
-        sm.register("scene:encryption:selection", new VideoSelectionController(config));
-        sm.register("scene:encryption", new EncryptionSceneController(config));
+        sm.register("scene:encryption:selection", new EncryptionSelectionController(config));
 
         sm.register("scene:decryption:selection", new DecryptionSelectionController(config));
-        sm.register("scene:decryption:euclide", new EuclideSceneController(config));
-        sm.register("scene:decryption:pearson", new PearsonSceneController(config));
 
         sm.switchTo("home", true);
         stage.show();
