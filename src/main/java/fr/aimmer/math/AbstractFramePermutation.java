@@ -29,13 +29,17 @@ public abstract class AbstractFramePermutation implements EncryptionMethod
     @Override
     public final File encrypt(File input, File outputDir)
     {
-        return process(input, new File(outputDir, "generated/crypted"), filePrefix(false), false);
+        File parent = input.getParentFile();
+        if (parent == null) parent = new File(".");
+        return process(input, parent, filePrefix(false), false);
     }
 
     @Override
     public final File decrypt(File input, File outputDir)
     {
-        return process(input, new File(outputDir, "generated/decrypted"), filePrefix(true), true);
+        File parent = input.getParentFile();
+        if (parent == null) parent = new File(".");
+        return process(input, parent, filePrefix(true), true);
     }
 
     /**
