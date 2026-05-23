@@ -95,17 +95,30 @@ public abstract class AbstractFramePermutation implements EncryptionMethod
                     "Résolution invalide (" + width + "x" + height + ") pour : " + inputFile.getName()
             );
 
+        int useFps = fps > 0 ? fps : 30;
+
         VideoWriter writer = new VideoWriter(
                 outputFile.getAbsolutePath(),
-                VideoWriter.fourcc('m', 'p', '4', 'v'),
-                fps > 0 ? fps : 30,
+                VideoWriter.fourcc('a', 'v', 'c', '1'),
+                useFps,
                 new Size(width, height)
         );
 
         if (!writer.isOpened())
+        {
+            System.out.println("[VideoScramble] Codec avc1 indisponible, fallback sur mp4v.");
+            writer = new VideoWriter(
+                    outputFile.getAbsolutePath(),
+                    VideoWriter.fourcc('m', 'p', '4', 'v'),
+                    useFps,
+                    new Size(width, height)
+            );
+        }
+
+        if (!writer.isOpened())
             throw new RuntimeException(
                     "Impossible de créer la vidéo de sortie : " + outputFile.getAbsolutePath()
-                    + "\nVérifiez les permissions d'écriture et la disponibilité du codec mp4v."
+                    + "\nVérifiez les permissions d'écriture et la disponibilité des codecs avc1/mp4v."
             );
 
         System.out.println("[VideoScramble] Writer ouvert : " + outputFile.getAbsolutePath());
