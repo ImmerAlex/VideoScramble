@@ -110,9 +110,10 @@ public double score(byte[] row1, byte[] row2)
 Pearson s'intègre dans le même moteur `NagravisionBruteForce` qu'Euclide, via l'injection de dépendance :
 
 ```java
-// DecryptionSelectionController.java:31-33
+// DecryptionSelectionController.TYPES (entrée Pearson)
 new DecryptionType("Pearson",
     "Force brute — corrélation de Pearson (insensible aux décalages de luminosité)",
+    "...",
     new NagravisionBruteForce("Pearson", new PearsonScoring()))
 ```
 
@@ -149,3 +150,15 @@ Le résultat contient :
 | Coût de calcul | `Σ Δ² + sqrt` (par paire) | `5 accumulateurs + division + sqrt` (par paire) |
 | Robustesse | Standard | Meilleure sur vidéos à éclairage non uniforme |
 | Interprétation | Distance géométrique (pixels) | Corrélation statistique (sans unité) |
+
+## Pourquoi cette attaque ne fonctionne que sur Nagravision
+
+Comme toutes les attaques basées sur `NagravisionBruteForce`, Pearson explore
+l'espace des permutations de lignes de Nagravision. Elle est incompatible avec
+Discret 11 (décalages horizontaux) et VideoCrypt (cut-and-rotate) car ces
+algorithmes préservent l'ordre vertical des lignes — le scoring de similarité
+entre lignes adjacentes n'a pas de sens sur une vidéo où les lignes sont déjà
+dans le bon ordre.
+
+Voir la [documentation de l'attaque Euclide](euclide.md) pour une explication
+détaillée de cette incompatibilité structurelle.

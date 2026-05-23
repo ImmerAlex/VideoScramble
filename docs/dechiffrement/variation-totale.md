@@ -76,9 +76,10 @@ Points notables :
 L1 s'intègre dans le même moteur `NagravisionBruteForce` que les autres métriques :
 
 ```java
-// DecryptionSelectionController.java:34-36
+// DecryptionSelectionController.TYPES (entrée Variation totale)
 new DecryptionType("Variation totale",
     "Force brute — somme des |Δ| (norme L1), favorise les images lisses",
+    "...",
     new NagravisionBruteForce("Variation totale", new L1Scoring()))
 ```
 
@@ -123,3 +124,15 @@ Le résultat contient :
 - Vidéos avec des **transitions brutales** entre plans (L1 n'est pas écrasée par les fortes discontinuités)
 - Quand la **performance** est critique (pas de carré, pas de racine)
 - Images avec beaucoup de **zones uniformes** (la variation totale est naturellement basse)
+
+## Pourquoi cette attaque ne fonctionne que sur Nagravision
+
+Comme toutes les attaques basées sur `NagravisionBruteForce`, la variation
+totale explore l'espace des permutations de lignes de Nagravision. Elle est
+incompatible avec Discret 11 (décalages horizontaux) et VideoCrypt
+(cut-and-rotate) car ces algorithmes préservent l'ordre vertical des lignes —
+le scoring de « lissé » inter-ligne n'a pas de sens sur une vidéo où les
+lignes sont déjà dans le bon ordre.
+
+Voir la [documentation de l'attaque Euclide](euclide.md) pour une explication
+détaillée de cette incompatibilité structurelle.

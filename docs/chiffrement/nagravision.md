@@ -52,24 +52,57 @@ Le facteur `(2*step + 1)` est forcément **impair**, ce qui garantit que la perm
 - **Classe parente** : `AbstractFramePermutation` — `src/main/java/fr/aimmer/math/AbstractFramePermutation.java` (factorise l'ouverture/fermeture OpenCV et la boucle frame par frame)
 - **Utilitaire** : `MathUtils.largestPowerOfTwo()` — `src/main/java/fr/aimmer/utils/MathUtils.java:14`
 
+### Variation par frame
+
+Pour éviter un pattern de brouillage statique (identique d'une frame à l'autre),
+l'offset effectif varie à chaque frame :
+
+```
+effectiveOffset = (offset + frameIndex) & 0xFF
+```
+
+Ainsi, la permutation des lignes est **différente pour chaque image** de la
+vidéo. Le compteur `frameIndex` est réinitialisé à 0 par `prepareForResolution`
+et incrémenté à chaque appel de `transformFrame`. Le modulo 256 (`& 0xFF`)
+garantit que l'offset effectif reste dans `[0, 255]`.
+
+Le déchiffrement reproduit exactement la même séquence puisque le `frameIndex`
+démarre également à 0.
+
 ### Flux d'exécution
 
 1. `AbstractFramePermutation.process()` ouvre la vidéo source via `VideoCapture`, détecte la résolution, crée un `VideoWriter` pour la sortie
-2. `prepareForResolution(width, height)` est appelée une seule fois — elle pré-calcule le mapping des lignes via `computeRowMapping(height, offset, step)` et le stocke dans le tableau `rowMapping`
-3. Pour chaque frame, `transformFrame()` est appelée :
+2. `prepareForResolution(width, height)` est appelée une seule fois — elle initialise `frameIndex = 0`
+3. Pour chaque frame, `transformFrame()` recalcule un mapping frais avec l'offset effectif de la frame :
    - **Chiffrement** (`inverse = false`) : `applyRowPermutation()` — `dest[mapping[i]] = source[i]`
    - **Déchiffrement** (`inverse = true`) : `applyInverseRowPermutation()` — `dest[i] = source[mapping[i]]`
 
 ```java
-// NagravisionAlgorithm.java:43-46
+// NagravisionAlgorithm.java:48-51
 protected void prepareForResolution(int width, int height)
 {
-    rowMapping = computeRowMapping(height, offset, step);
+    this.frameIndex = 0;
 }
 ```
 
 ```java
-// NagravisionAlgorithm.java:58-82
+// NagravisionAlgorithm.java:54-64
+protected void transformFrame(Mat source, Mat dest, boolean inverse)
+{
+    int effectiveOffset = (offset + frameIndex) & 0xFF;
+    int[] mapping = computeRowMapping(source.rows(), effectiveOffset, step);
+    if (inverse)
+        applyInverseRowPermutation(source, dest, mapping);
+    else
+        applyRowPermutation(source, dest, mapping);
+    frameIndex++;
+}
+```
+
+### Calcul du mapping de lignes
+
+```java
+// NagravisionAlgorithm.java:66-90
 static int[] computeRowMapping(int height, int offset, int step)
 {
     int[] mapping = new int[height];
@@ -100,7 +133,7 @@ static int[] computeRowMapping(int height, int offset, int step)
 ### Permutation directe
 
 ```java
-// NagravisionAlgorithm.java:85-91
+// NagravisionAlgorithm.java:93-99
 private static void applyRowPermutation(Mat source, Mat dest, int[] mapping)
 {
     source.copyTo(dest);
@@ -113,7 +146,7 @@ private static void applyRowPermutation(Mat source, Mat dest, int[] mapping)
 ### Permutation inverse (utilisée pour le déchiffrement explicite)
 
 ```java
-// NagravisionAlgorithm.java:93-99
+// NagravisionAlgorithm.java:101-108
 private static void applyInverseRowPermutation(Mat source, Mat dest, int[] mapping)
 {
     source.copyTo(dest);
@@ -125,13 +158,14 @@ private static void applyInverseRowPermutation(Mat source, Mat dest, int[] mappi
 
 ## Fichier de sortie
 
-- Chiffrement : `<outputDir>/generated/crypted/encrypted_<nom>.mp4`
-- Déchiffrement : `<outputDir>/generated/decrypted/decrypted_<nom>.mp4`
+- Chiffrement : `<dossier de la vidéo d'entrée>/encrypted_<nom>.mp4`
+- Déchiffrement : `<dossier de la vidéo d'entrée>/decrypted_<nom>.mp4`
 
 ## Exemple visuel
 
 Pour `offset = 42` et `step = 13` sur une image 1280×720 :
 - Chaque frame est découpée en blocs de tailles 512, 128, 64, 16
 - Dans chaque bloc, les lignes sont permutées selon la formule
+- L'offset effectif varie à chaque frame (`(42 + frameIndex) & 0xFF`), rendant le brouillage dynamique
 - L'image chiffrée est visuellement incompréhensible (lignes mélangées)
 - L'application de la permutation avec la même clé restaure l'image originale

@@ -22,11 +22,21 @@ L'algorithme utilise **3 niveaux de décalage** calqués sur l'original analogiq
 | 1 | `SHIFT_UNIT` pixels (par défaut 4) | 902 ns |
 | 2 | `2 × SHIFT_UNIT` pixels (par défaut 8) | 1804 ns |
 
-La constante `SHIFT_UNIT` est fixée à 4 pixels dans l'implémentation actuelle (`Discret11Algorithm.java:23`).
+La constante `SHIFT_UNIT` est fixée à 4 pixels dans l'implémentation actuelle (`Discret11Algorithm.java:25`).
 
 ## Algorithme de décalage
 
-### 1. Génération de la séquence de décalages
+### 1. Variation par frame
+
+La séquence de décalages varie à chaque frame : la graine effective est
+`seed + frameIndex`. Le `frameIndex` est réinitialisé à 0 par
+`prepareForResolution` et incrémenté par `transformFrame`.
+
+Le déchiffrement reproduit la même séquence puisque `frameIndex` redémarre
+également à 0, et que l'inversion des décalages (paramètre `inverse = true`)
+applique les shifts de signe opposé.
+
+### 2. Génération de la séquence de décalages
 
 Pour chaque ligne `i` (de `0` à `height - 1`) :
 
@@ -37,7 +47,7 @@ shifts[i] = level * SHIFT_UNIT;   // 0, 4, ou 8 pixels
 
 La séquence est **déterministe** pour une graine donnée, car le `Random` est initialisé avec cette graine.
 
-### 2. Application du décalage horizontal
+### 3. Application du décalage horizontal
 
 Pour chaque ligne `i`, on décale ses pixels vers la droite de `shifts[i]` pixels, avec **wrap-around** :
 
@@ -52,7 +62,7 @@ En pratique, l'opération est implémentée en deux copier-coller OpenCV :
 
 Où `cut = (shifts[i] % width + width) % width` (normalisé dans `[0, width)`).
 
-### 3. Préservation de l'information
+### 4. Préservation de l'information
 
 Le wrap-around garantit que **toute l'information est préservée** : aucun pixel n'est perdu, le décalage est strictement réversible.
 
@@ -65,21 +75,31 @@ Le wrap-around garantit que **toute l'information est préservée** : aucun pixe
 
 ### Flux d'exécution
 
-1. `prepareForResolution(width, height)` est appelée une fois — `computeRowShifts(height, seed)` génère le tableau `shifts[]` contenant le décalage de chaque ligne
-2. Pour chaque frame, `transformFrame()` appelle `applyRowShifts(source, dest, shifts, inverse)`
+1. `prepareForResolution(width, height)` est appelée une fois — initialise `frameIndex = 0` et stocke les dimensions
+2. Pour chaque frame, `transformFrame()` calcule des shifts frais avec `computeRowShifts(height, seed + frameIndex)` puis appelle `applyRowShifts()`. Le `frameIndex` est incrémenté à chaque frame, garantissant une séquence de décalages différente d'une image à l'autre.
 
 ```java
-// Discret11Algorithm.java:47-49
+// Discret11Algorithm.java:48-52
 protected void prepareForResolution(int width, int height)
 {
-    shifts = computeRowShifts(height, seed);
+    this.frameIndex = 0;
+}
+```
+
+```java
+// Discret11Algorithm.java:55-60
+protected void transformFrame(Mat source, Mat dest, boolean inverse)
+{
+    int[] shifts = computeRowShifts(source.rows(), seed + frameIndex);
+    applyRowShifts(source, dest, shifts, inverse);
+    frameIndex++;
 }
 ```
 
 ### Génération de la séquence de shifts
 
 ```java
-// Discret11Algorithm.java:71-81
+// Discret11Algorithm.java:69-78
 static int[] computeRowShifts(int height, int seed)
 {
     int[] shifts = new int[height];
@@ -96,7 +116,7 @@ static int[] computeRowShifts(int height, int seed)
 ### Application des décalages par ligne
 
 ```java
-// Discret11Algorithm.java:92-109
+// Discret11Algorithm.java:90-107
 private static void applyRowShifts(Mat source, Mat dest, int[] shifts, boolean inverse)
 {
     source.copyTo(dest);  // couvre les lignes à shift nul
@@ -117,8 +137,8 @@ private static void applyRowShifts(Mat source, Mat dest, int[] shifts, boolean i
 
 ## Fichier de sortie
 
-- Chiffrement : `<outputDir>/generated/crypted/encrypted_d11_<nom>.mp4`
-- Déchiffrement : `<outputDir>/generated/decrypted/decrypted_d11_<nom>.mp4`
+- Chiffrement : `<dossier de la vidéo d'entrée>/encrypted_d11_<nom>.mp4`
+- Déchiffrement : `<dossier de la vidéo d'entrée>/decrypted_d11_<nom>.mp4`
 
 ## Différences avec le Discret 11 analogique original
 
@@ -126,7 +146,7 @@ private static void applyRowShifts(Mat source, Mat dest, int[] shifts, boolean i
 |---|---|---|
 | Domaine | Signal analogique (temps) | Image numérique (pixels) |
 | Décalage | Retard temporel en nanosecondes | Décalage spatial en pixels |
-| Séquence | Variable frame paire/impaire | Identique pour toutes les frames |
+| Séquence | Variable frame paire/impaire | Variable à chaque frame (`seed + frameIndex`) |
 | Niveaux | 3 (0, 902 ns, 1804 ns) | 3 (0, 4 px, 8 px) |
 
 ## Note : attaque par force brute

@@ -98,7 +98,7 @@ fr.aimmer/
 
 **Traitement asynchrone** — tout traitement OpenCV lourd tourne dans un `javafx.concurrent.Task` (thread séparé) pour ne pas bloquer le thread JavaFX. Ce pattern est obligatoire dans tous les controllers qui lancent un traitement vidéo.
 
-**`EncryptionMethod` + `AbstractFramePermutation`** — la classe abstraite factorise l'ouverture/fermeture d'OpenCV et la boucle frame par frame. Les sous-classes implémentent 3 méthodes : `filePrefix(inverse)`, `prepareForResolution(w, h)` (pré-calcul du mapping/shifts/cuts), `transformFrame(src, dst, inverse)`. La clé est portée par l'état de l'instance (passée au constructeur), pas par les signatures de méthodes.
+**`EncryptionMethod` + `AbstractFramePermutation`** — la classe abstraite factorise l'ouverture/fermeture d'OpenCV et la boucle frame par frame. Les sous-classes implémentent 3 méthodes : `filePrefix(inverse)`, `prepareForResolution(w, h)` (initialise le compteur `frameIndex` pour la variation par frame), `transformFrame(src, dst, inverse)` (recalcule le mapping/shifts/cuts à chaque frame avec `frameIndex`). La clé est portée par l'état de l'instance (passée au constructeur), pas par les signatures de méthodes.
 
 **`DecryptionMethod` + `RowScoringFunction`** — `NagravisionBruteForce(displayName, scoring)` parcourt l'espace de clés Nagravision (256×128) et délègue la mesure de similarité de lignes à une `RowScoringFunction` (interface fonctionnelle `double score(byte[], byte[])`). Ajouter une nouvelle métrique = une classe de quelques lignes dans `math/scoring/` + une ligne dans `DecryptionSelectionController.TYPES`.
 
@@ -205,10 +205,10 @@ Les scènes `scene:encryption:video-selection`, `scene:encryption`, `scene:decry
 - Le `SceneManager` doit être initialisé avec un `Stage` avant tout `switchTo` sans stage explicite.
 - `MediaViewFactory.getMediaView` lance la lecture automatiquement (`mediaPlayer.play()`).
 - La vidéo de test embarquée est à `src/main/resources/video/Pencil_Candle_1280x720.mp4` (1280×720).
-- Les fichiers générés sont écrits dans `<outputDir>/generated/crypted/encrypted_<prefix>_<nom>` et `<outputDir>/generated/decrypted/decrypted_<prefix>_<nom>`. Les préfixes (`encrypted_`, `encrypted_d11_`, `encrypted_vc_`) sont gérés par chaque algo via `filePrefix()`.
+- Les fichiers générés sont écrits dans le même dossier que la vidéo d'entrée (`input.getParentFile()`), avec le préfixe correspondant au mode de chiffrement. Les préfixes (`encrypted_`, `encrypted_d11_`, `encrypted_vc_`) sont gérés par chaque algo via `filePrefix()`.
 - `App.config` est un champ statique positionné avant `launch()` — c'est le seul moyen propre de passer des paramètres typés à une `Application` JavaFX sans repasser par les args String.
 - `NagravisionBruteForce` est **sans état mutable** : une instance par scoring est partagée par toutes les sessions de décryption (cf. `DecryptionSelectionController.TYPES`).
-- `AbstractFramePermutation.process()` appelle `prepareForResolution(w, h)` une seule fois par vidéo : la sous-classe peut y mémoriser le mapping/shifts/cuts.
+- `AbstractFramePermutation.process()` appelle `prepareForResolution(w, h)` une seule fois par vidéo : la sous-classe y initialise son compteur `frameIndex` et mémorise les dimensions. Le mapping/shifts/cuts sont recalculés à chaque frame dans `transformFrame()` pour garantir un brouillage dynamique.
 
 ## Conventions git
 

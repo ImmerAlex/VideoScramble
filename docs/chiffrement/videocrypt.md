@@ -56,7 +56,7 @@ R_c([B|c'| A]) avec c' = largeur - c → [A | B]
 
 Ceci est assuré par construction : après la première rotation, le point de coupe relatif dans la ligne chiffrée est `largeur - coupe_originale`. La seconde rotation restaure donc l'ordre initial.
 
-Le paramètre `inverse` de `transformFrame()` est **ignoré** dans cette implémentation (voir `VideoCryptAlgorithm.java:59`).
+Le paramètre `inverse` de `transformFrame()` est **ignoré** dans cette implémentation (voir `VideoCryptAlgorithm.java:62`).
 
 ## Implémentation
 
@@ -65,32 +65,44 @@ Le paramètre `inverse` de `transformFrame()` est **ignoré** dans cette implém
 - **Classe** : `VideoCryptAlgorithm` — `src/main/java/fr/aimmer/math/VideoCryptAlgorithm.java`
 - **Classe parente** : `AbstractFramePermutation` — `src/main/java/fr/aimmer/math/AbstractFramePermutation.java`
 
+### Variation par frame
+
+La séquence de coupes varie à chaque frame : la graine effective est
+`seed + frameIndex`. Le `frameIndex` est réinitialisé à 0 par
+`prepareForResolution` et incrémenté à chaque appel de `transformFrame`.
+
+Le déchiffrement reproduit la même séquence puisque `frameIndex` redémarre
+à 0 et que l'algorithme est involutif (appliquer deux fois avec la même
+graine effective restaure l'image).
+
 ### Flux d'exécution
 
-1. `prepareForResolution(width, height)` est appelée une fois — `computeRowCutPoints(height, width, seed)` génère le tableau `cuts[]`
-2. Pour chaque frame, `transformFrame()` appelle `applyCutAndRotate()` — le paramètre `inverse` est ignoré car l'opération est involutive
+1. `prepareForResolution(width, height)` est appelée une fois — initialise `frameIndex = 0`
+2. Pour chaque frame, `transformFrame()` recalcule des coupes fraîches avec `computeRowCutPoints(height, width, seed + frameIndex)` puis appelle `applyCutAndRotate()` — le paramètre `inverse` est ignoré car l'opération est involutive
 
 ```java
-// VideoCryptAlgorithm.java:50-54
+// VideoCryptAlgorithm.java:53-56
 protected void prepareForResolution(int width, int height)
 {
-    cuts = computeRowCutPoints(height, width, seed);
+    this.frameIndex = 0;
 }
 ```
 
 ```java
-// VideoCryptAlgorithm.java:56-61
+// VideoCryptAlgorithm.java:59-65
 protected void transformFrame(Mat source, Mat dest, boolean inverse)
 {
+    int[] cuts = computeRowCutPoints(source.rows(), source.cols(), seed + frameIndex);
     // L'opération est sa propre inverse : aucun traitement spécial en mode inverse.
     applyCutAndRotate(source, dest, cuts);
+    frameIndex++;
 }
 ```
 
 ### Calcul des points de coupe
 
 ```java
-// VideoCryptAlgorithm.java:76-91
+// VideoCryptAlgorithm.java:75-90
 static int[] computeRowCutPoints(int height, int width, int seed)
 {
     int[] cuts = new int[height];
@@ -109,7 +121,7 @@ static int[] computeRowCutPoints(int height, int width, int seed)
 ### Application du cut-and-rotate
 
 ```java
-// VideoCryptAlgorithm.java:102-118
+// VideoCryptAlgorithm.java:101-117
 private static void applyCutAndRotate(Mat source, Mat dest, int[] cuts)
 {
     source.copyTo(dest);
@@ -129,8 +141,8 @@ private static void applyCutAndRotate(Mat source, Mat dest, int[] cuts)
 
 ## Fichier de sortie
 
-- Chiffrement : `<outputDir>/generated/crypted/encrypted_vc_<nom>.mp4`
-- Déchiffrement : `<outputDir>/generated/decrypted/decrypted_vc_<nom>.mp4`
+- Chiffrement : `<dossier de la vidéo d'entrée>/encrypted_vc_<nom>.mp4`
+- Déchiffrement : `<dossier de la vidéo d'entrée>/decrypted_vc_<nom>.mp4`
 
 ## Différences avec le VideoCrypt original (BSkyB, 1989)
 
@@ -138,7 +150,7 @@ private static void applyCutAndRotate(Mat source, Mat dest, int[] cuts)
 |---|---|---|
 | Principe | Cut-and-rotate analogique sur signal vidéo | Cut-and-rotate numérique sur pixels |
 | Quantification | 256 positions (horloge) | 256 positions (paramétrable via `CUT_POSITIONS`) |
-| Séquence | Variable selon les frames | Fixe pour toutes les frames (même `cuts[]`) |
+| Séquence | Variable selon les frames | Variable à chaque frame (`seed + frameIndex`) |
 | Involutivité | Oui | Oui, par construction |
 
 ## Note : attaque par force brute

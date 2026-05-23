@@ -41,21 +41,23 @@ NagravisionBruteForce  (boucle d'exploration, échantillonnage)
   └── NagravisionAlgorithm.computeRowMapping()  (reconstruction virtuelle)
 ```
 
-- `NagravisionBruteForce` (`src/main/java/fr/aimmer/math/NagravisionBruteForce.java`) : moteur de l'attaque — parcourt les 32 768 clés, échantillonne les frames, évalue les candidats
+- `NagravisionBruteForce` (`src/main/java/fr/aimmer/math/NagravisionBruteForce.java`) : moteur de l'attaque — parcourt les 32 768 clés, échantillonne les frames avec leur position, évalue les candidats en tenant compte de l'offset effectif par frame
 - `EuclideanScoring` (`src/main/java/fr/aimmer/math/scoring/EuclideanScoring.java`) : implémentation de la distance L2
-- `NagravisionAlgorithm.computeRowMapping()` (`src/main/java/fr/aimmer/math/NagravisionAlgorithm.java:58`) : reconstruit virtuellement l'ordre des lignes pour une clé donnée (sans écrire sur disque)
+- `NagravisionAlgorithm.computeRowMapping()` (`src/main/java/fr/aimmer/math/NagravisionAlgorithm.java:66`) : reconstruit virtuellement l'ordre des lignes pour une clé donnée (sans écrire sur disque)
 
 ## Optimisations
 
-### 1. Échantillonnage temporel (5 frames)
+### 1. Échantillonnage temporel (5 frames avec position)
 
-Au lieu d'analyser toutes les frames, l'attaque échantillonne **5 frames** réparties entre 20 % et 80 % de la durée de la vidéo. Ceci évite les frames d'intro/outro souvent uniformes (fond noir, titres) qui pourraient tromper le scoring.
+Au lieu d'analyser toutes les frames, l'attaque échantillonne **5 frames** réparties entre 20 % et 80 % de la durée de la vidéo. Chaque frame échantillonnée est stockée avec sa **position** (`frameIndex`) dans un enregistrement `SampledFrame` — ceci permet de répliquer la variation d'offset par frame de Nagravision.
 
 ```java
-// NagravisionBruteForce.java:115-156
+// NagravisionBruteForce.java:119-159
 int start = Math.max(1, totalFrames / 5);           // 20 %
 int end   = Math.max(start + 1, totalFrames * 4 / 5); // 80 %
 int step  = Math.max(1, (end - start) / SAMPLE_COUNT);
+// ...
+frames.add(new SampledFrame(pos, rows));
 ```
 
 ### 2. Sous-échantillonnage spatial (1 colonne sur 4)
@@ -63,26 +65,46 @@ int step  = Math.max(1, (end - start) / SAMPLE_COUNT);
 Pour chaque ligne, on ne conserve qu'un octet toutes les 4 colonnes (`COLUMN_STRIDE = 4`). Ceci divise par 4 la quantité de calculs par paire de lignes, sans perte significative de précision : la corrélation entre lignes adjacentes se maintient même avec un sous-échantillonnage modéré.
 
 ```java
-// NagravisionBruteForce.java:148-151
+// NagravisionBruteForce.java:152-155
 for (int c = 0, ci = 0; c < rowBytes; c += COLUMN_STRIDE, ci++)
     rows[r][ci] = fullRow[c];
 ```
 
-### 3. Reconstruction virtuelle
+### 3. Reconstruction virtuelle avec offset effectif
 
-La clé candidate n'est **jamais écrite sur disque** pendant l'exploration. Le mapping de lignes est appliqué virtuellement en mémoire :
+La clé candidate n'est **jamais écrite sur disque** pendant l'exploration. Le mapping
+de lignes est appliqué virtuellement en mémoire. Pour correspondre à la variation
+par frame de `NagravisionAlgorithm`, l'offset effectif inclut la position de la
+frame : `effectiveOffset = (offset + frameIndex) & 0xFF`.
 
 ```java
-// NagravisionBruteForce.java:163-172
-private double scoreCandidate(byte[][] rows, int height, int offset, int step)
+// NagravisionBruteForce.java:170-179
+private double scoreCandidate(byte[][] rows, int height, int offset, int step, int frameIndex)
 {
-    int[] mapping = NagravisionAlgorithm.computeRowMapping(height, offset, step);
+    int effectiveOffset = (offset + frameIndex) & 0xFF;
+    int[] mapping = NagravisionAlgorithm.computeRowMapping(height, effectiveOffset, step);
     double total = 0;
     for (int i = 0; i < height - 1; i++) {
         total += scoring.score(rows[mapping[i]], rows[mapping[i + 1]]);
     }
     return total;
 }
+```
+
+La boucle principale de l'attaque itère sur les frames échantillonnées en
+passant leur `frameIndex` :
+
+```java
+for (SampledFrame sf : sampledFrames) {
+    frameScore += scoreCandidate(sf.rows, height, offset, step, sf.frameIndex);
+}
+```
+
+L'enregistrement `SampledFrame` (ligne 182) couple les données de pixels et
+la position dans la vidéo :
+
+```java
+private record SampledFrame(int frameIndex, byte[][] rows) {}
 ```
 
 Une fois la meilleure clé trouvée, un **seul** `NagravisionAlgorithm.decrypt()` est exécuté pour produire le fichier de sortie.
@@ -130,3 +152,20 @@ Le résultat contient :
 ## Caractéristique pédagogique
 
 Euclide est la métrique **de référence historique** du projet. Elle est intuitive (distance géométrique) et fonctionne bien sur la plupart des vidéos. Cependant, elle est **sensible aux décalages de luminosité** : si la vidéo a un dégradé vertical ou du vignettage, Euclide pénalisera ces variations naturelles et pourrait être moins discriminante que Pearson.
+
+## Pourquoi cette attaque ne fonctionne que sur Nagravision
+
+L'attaque explore l'espace de clés de **Nagravision uniquement** (256 × 128
+permutations de lignes). Elle est structurellement incompatible avec les autres
+algorithmes de chiffrement :
+
+| Chiffrement | Structure mathématique | Pourquoi l'attaque échoue |
+|---|---|---|
+| **Nagravision** | Permutation de lignes par blocs de puissance de 2 | ✅ Compatible : l'attaque essaie d'inverser cette permutation |
+| **Discret 11** | Décalage horizontal pseudo-aléatoire par ligne | ❌ Les shifts horizontaux ne changent pas l'ordre vertical des lignes. Le scoring de similarité entre lignes adjacentes n'a aucun sens : les lignes sont déjà dans le bon ordre, elles sont juste décalées horizontalement. |
+| **VideoCrypt** | Cut-and-rotate par ligne | ❌ Comme Discret 11, les lignes restent dans leur ordre vertical. Le scoring de lissé inter-ligne est inopérant. De plus, le cut-and-rotate mélange les moitiés de ligne, ce qui n'est pas inversible par une permutation de lignes. |
+
+Pour attaquer Discret 11 ou VideoCrypt, il faudrait un attaquant dédié qui
+explore l'espace des graines (seed) avec un scoring adapté à la structure
+spécifique de chaque chiffrement (corrélation horizontale pour Discret 11,
+reconnaissance de continuité pour VideoCrypt).
