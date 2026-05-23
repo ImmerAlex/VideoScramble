@@ -47,18 +47,27 @@ public class Main
 
 		try
 		{
-			OpenCV.loadLocally();
-			System.out.println(LOG_PREFIX + " OpenCV chargé avec succès.");
+			System.loadLibrary("opencv_java");
+			System.out.println(LOG_PREFIX + " OpenCV système chargé avec succès (support codec complet).");
 		}
-		catch (Exception e)
+		catch (UnsatisfiedLinkError e)
 		{
-			System.err.println(
-					"Erreur: Impossible de charger OpenCV.\n"
-					+ "Vérifiez que le répertoire temporaire système est accessible en écriture\n"
-					+ "et n'est pas monté avec l'option 'noexec'.\n"
-					+ "Détail : " + e.getMessage()
-			);
-			System.exit(1);
+			System.out.println(LOG_PREFIX + " OpenCV système non disponible, fallback sur la version embarquée (support codec limité).");
+			try
+			{
+				OpenCV.loadLocally();
+				System.out.println(LOG_PREFIX + " OpenCV embarqué chargé avec succès.");
+			}
+			catch (Exception e2)
+			{
+				System.err.println(
+						"Erreur: Impossible de charger OpenCV.\n"
+						+ "Vérifiez que le répertoire temporaire système est accessible en écriture\n"
+						+ "et n'est pas monté avec l'option 'noexec'.\n"
+						+ "Détail : " + e2.getMessage()
+				);
+				System.exit(1);
+			}
 		}
 		App.application(config, args);
 	}
