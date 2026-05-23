@@ -13,18 +13,20 @@ import java.util.Random;
  * Le choix par ligne est piloté par une séquence pseudo-aléatoire dérivée
  * d'une graine (la clé).
  * <p>
+ * La graine effective varie à chaque frame : {@code seed + frameIndex}.
+ * La séquence de décalages n'est donc jamais la même d'une frame à l'autre.
+ * <p>
  * Algorithme symétrique : chiffrer puis déchiffrer avec la même graine restaure
  * l'image originale.
  */
 public class Discret11Algorithm extends AbstractFramePermutation
 {
     // Pas du décalage horizontal (en pixels). 3 niveaux possibles : 0, +UNIT, +2*UNIT.
-    // TODO : ajuster cette valeur en fonction de la résolution cible.
     private static final int SHIFT_UNIT   = 4;
     private static final int SHIFT_LEVELS = 3;
 
     private final int seed;
-    private int[] shifts;
+    private int frameIndex;
 
     public Discret11Algorithm(int seed)
     {
@@ -46,26 +48,22 @@ public class Discret11Algorithm extends AbstractFramePermutation
     @Override
     protected void prepareForResolution(int width, int height)
     {
-        shifts = computeRowShifts(height, seed);
+        this.frameIndex = 0;
     }
 
     @Override
     protected void transformFrame(Mat source, Mat dest, boolean inverse)
     {
+        int[] shifts = computeRowShifts(source.rows(), seed + frameIndex);
         applyRowShifts(source, dest, shifts, inverse);
+        frameIndex++;
     }
 
     /**
      * Calcule, pour chaque ligne, le décalage horizontal (en pixels) à appliquer.
      * Valeurs possibles : 0, SHIFT_UNIT, 2*SHIFT_UNIT (3 niveaux comme l'original).
      * <p>
-     * La séquence doit être déterministe pour une même graine.
-     *
-     * TODO :
-     *   - Décider si la séquence est globale (1 par ligne, identique pour toutes les
-     *     frames) ou variable dans le temps (1 par (frame, ligne)).
-     *     L'original Discret 11 utilisait une séquence variable mais qui se répétait
-     *     à chaque trame paire/impaire — à arbitrer pour la présentation.
+     * La séquence est déterministe pour une même graine.
      */
     // package-private pour les tests unitaires
     static int[] computeRowShifts(int height, int seed)

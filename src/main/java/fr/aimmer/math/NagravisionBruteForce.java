@@ -20,6 +20,9 @@ import java.util.function.IntConsumer;
  * Le score est moyenné sur plusieurs frames réparties dans la vidéo pour
  * éviter d'être trompé par une frame d'intro/outro ou un fond uni.
  * <p>
+ * Tient compte de la variation d'offset par frame introduite dans
+ * {@link NagravisionAlgorithm} ({@code effectiveOffset = (offset + frameIndex) & 0xFF}).
+ * <p>
  * Le paradigme "exploration de clé + scoring de lissé" est partagé : seule
  * la fonction de scoring change entre les attaques (Euclide, Pearson, L1…).
  */
@@ -68,7 +71,7 @@ public class NagravisionBruteForce implements DecryptionMethod
 
         int totalFrames = (int) capture.get(Videoio.CAP_PROP_FRAME_COUNT);
         System.out.println("[VideoScramble] BruteForce : " + totalFrames + " frames, échantillonnage en cours...");
-        List<byte[][]> sampledFrames = sampleFrames(capture, totalFrames);
+        List<SampledFrame> sampledFrames = sampleFrames(capture, totalFrames);
         capture.release();
 
         if (sampledFrames.isEmpty())
@@ -77,7 +80,7 @@ public class NagravisionBruteForce implements DecryptionMethod
         System.out.println("[VideoScramble] BruteForce : " + sampledFrames.size()
                 + " frames échantillonnées, recherche de la clé...");
 
-        int height = sampledFrames.get(0).length;
+        int height = sampledFrames.get(0).rows.length;
 
         int bestOffset = 0;
         int bestStep = 0;
@@ -87,8 +90,8 @@ public class NagravisionBruteForce implements DecryptionMethod
         for (int offset = 0; offset <= OFFSET_MAX; offset++) {
             for (int step = 0; step <= STEP_MAX; step++) {
                 double frameScore = 0;
-                for (byte[][] rows : sampledFrames) {
-                    frameScore += scoreCandidate(rows, height, offset, step);
+                for (SampledFrame sf : sampledFrames) {
+                    frameScore += scoreCandidate(sf.rows, height, offset, step, sf.frameIndex);
                 }
                 if (frameScore < bestScore) {
                     bestScore = frameScore;
@@ -111,10 +114,11 @@ public class NagravisionBruteForce implements DecryptionMethod
     /**
      * Échantillonne SAMPLE_COUNT frames réparties entre 20 % et 80 % de la vidéo
      * pour éviter les frames d'intro/outro souvent uniformes.
+     * Retourne la position de chaque frame pour la variation d'offset par frame.
      */
-    private static List<byte[][]> sampleFrames(VideoCapture capture, int totalFrames)
+    private static List<SampledFrame> sampleFrames(VideoCapture capture, int totalFrames)
     {
-        List<byte[][]> frames = new ArrayList<>();
+        List<SampledFrame> frames = new ArrayList<>();
 
         int start = Math.max(1, totalFrames / 5);
         int end = Math.max(start + 1, totalFrames * 4 / 5);
@@ -149,7 +153,7 @@ public class NagravisionBruteForce implements DecryptionMethod
                 for (int c = 0, ci = 0; c < rowBytes; c += COLUMN_STRIDE, ci++)
                     rows[r][ci] = fullRow[c];
             }
-            frames.add(rows);
+            frames.add(new SampledFrame(pos, rows));
         }
 
         return frames;
@@ -159,10 +163,14 @@ public class NagravisionBruteForce implements DecryptionMethod
      * Score d'une clé candidate : somme des scores de la fonction injectée
      * entre lignes consécutives de l'image reconstituée. Plus le score est bas,
      * mieux c'est.
+     * <p>
+     * L'offset effectif inclut la position de la frame dans la vidéo pour
+     * correspondre à la variation par frame de {@link NagravisionAlgorithm}.
      */
-    private double scoreCandidate(byte[][] rows, int height, int offset, int step)
+    private double scoreCandidate(byte[][] rows, int height, int offset, int step, int frameIndex)
     {
-        int[] mapping = NagravisionAlgorithm.computeRowMapping(height, offset, step);
+        int effectiveOffset = (offset + frameIndex) & 0xFF;
+        int[] mapping = NagravisionAlgorithm.computeRowMapping(height, effectiveOffset, step);
 
         double total = 0;
         for (int i = 0; i < height - 1; i++) {
@@ -170,4 +178,6 @@ public class NagravisionBruteForce implements DecryptionMethod
         }
         return total;
     }
+
+    private record SampledFrame(int frameIndex, byte[][] rows) {}
 }

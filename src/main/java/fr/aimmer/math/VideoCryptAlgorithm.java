@@ -16,6 +16,9 @@ import java.util.Random;
  * éventuelle attaque brute force), on quantifie le point de coupe sur N
  * positions discrètes au lieu de la largeur complète.
  * <p>
+ * La graine effective varie à chaque frame : {@code seed + frameIndex}.
+ * La séquence de coupes n'est donc jamais la même d'une frame à l'autre.
+ * <p>
  * Algorithme involutif : la même opération avec la même graine chiffre et
  * déchiffre — le paramètre {@code inverse} de {@link #transformFrame} est
  * ignoré.
@@ -24,11 +27,10 @@ public class VideoCryptAlgorithm extends AbstractFramePermutation
 {
     // Nombre de positions de coupe possibles par ligne.
     // 256 correspond au choix historique de VideoCrypt.
-    // TODO : exposer ce paramètre dans AppConfig si on veut le faire varier en démo.
     private static final int CUT_POSITIONS = 256;
 
     private final int seed;
-    private int[] cuts;
+    private int frameIndex;
 
     public VideoCryptAlgorithm(int seed)
     {
@@ -50,14 +52,16 @@ public class VideoCryptAlgorithm extends AbstractFramePermutation
     @Override
     protected void prepareForResolution(int width, int height)
     {
-        cuts = computeRowCutPoints(height, width, seed);
+        this.frameIndex = 0;
     }
 
     @Override
     protected void transformFrame(Mat source, Mat dest, boolean inverse)
     {
+        int[] cuts = computeRowCutPoints(source.rows(), source.cols(), seed + frameIndex);
         // L'opération est sa propre inverse : aucun traitement spécial en mode inverse.
         applyCutAndRotate(source, dest, cuts);
+        frameIndex++;
     }
 
     /**
@@ -66,11 +70,6 @@ public class VideoCryptAlgorithm extends AbstractFramePermutation
      * Le point est tiré dans [0, width) mais quantifié sur min(CUT_POSITIONS, width)
      * valeurs possibles : on garantit que tous les cuts générés sont < width
      * et > 0 (un cut à 0 ou width ne ferait rien).
-     *
-     * TODO :
-     *   - Décider si la séquence de cuts est globale ou variable par frame.
-     *     Globale = plus simple à attaquer/démontrer ; variable = plus sécurisé
-     *     mais ne change pas grand-chose pédagogiquement.
      */
     // package-private pour les tests unitaires
     static int[] computeRowCutPoints(int height, int width, int seed)

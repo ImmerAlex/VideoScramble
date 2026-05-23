@@ -12,14 +12,19 @@ import static fr.aimmer.utils.MathUtils.largestPowerOfTwo;
  * <pre>
  *   dst = base + (offset + (2*step+1)*i) % blockSize
  * </pre>
+ * <p>
+ * L'offset effectif varie à chaque frame : {@code offset + frameIndex mod 256}.
+ * Ceci garantit un brouillage dynamique — la permutation n'est jamais la même
+ * d'une frame à l'autre.
+ * <p>
  * Algorithme symétrique : la même opération avec les mêmes paramètres
- * chiffre puis déchiffre.
+ * chiffre puis déchiffre (la variation par frame est déterministe).
  */
 public class NagravisionAlgorithm extends AbstractFramePermutation
 {
     private final int offset;
     private final int step;
-    private int[] rowMapping;
+    private int frameIndex;
 
     public NagravisionAlgorithm(int offset, int step)
     {
@@ -42,19 +47,22 @@ public class NagravisionAlgorithm extends AbstractFramePermutation
     @Override
     protected void prepareForResolution(int width, int height)
     {
-        rowMapping = computeRowMapping(height, offset, step);
+        this.frameIndex = 0;
     }
 
     @Override
     protected void transformFrame(Mat source, Mat dest, boolean inverse)
     {
+        int effectiveOffset = (offset + frameIndex) & 0xFF;
+        int[] mapping = computeRowMapping(source.rows(), effectiveOffset, step);
         if (inverse)
-            applyInverseRowPermutation(source, dest, rowMapping);
+            applyInverseRowPermutation(source, dest, mapping);
         else
-            applyRowPermutation(source, dest, rowMapping);
+            applyRowPermutation(source, dest, mapping);
+        frameIndex++;
     }
 
-    // package-private pour les tests unitaires
+    // package-private pour les tests unitaires et NagravisionBruteForce
     static int[] computeRowMapping(int height, int offset, int step)
     {
         int[] mapping = new int[height];
