@@ -5,6 +5,7 @@ import fr.aimmer.Main;
 import fr.aimmer.math.EncryptionMethod;
 import fr.aimmer.utils.MediaViewFactory;
 import fr.aimmer.view.GoHomeButton;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -42,10 +43,10 @@ public class EncryptionSceneController implements Controller
 
 		Scene scene = new Scene(root, Main.WIDTH, Main.HEIGHT);
 
-		Task<List<MediaView>> task = new Task<>()
+		Task<List<File>> task = new Task<>()
 		{
 			@Override
-			protected List<MediaView> call() throws Exception
+			protected List<File> call() throws Exception
 			{
 				System.out.println("[VideoScramble] Début chiffrement : algo=" + algo.displayName()
 						+ ", input=" + config.inputFile().getAbsolutePath()
@@ -58,15 +59,16 @@ public class EncryptionSceneController implements Controller
 				System.out.println("[VideoScramble] Chiffrement terminé : " + processedFile.getAbsolutePath()
 						+ " (" + processedFile.length() + " octets)");
 
-				MediaView originalView  = MediaViewFactory.getMediaView(config.inputFile());
-				MediaView processedView = MediaViewFactory.getMediaView(processedFile);
-				return List.of(originalView, processedView);
+				return List.of(config.inputFile(), processedFile);
 			}
 		};
 
 		task.setOnSucceeded(event -> {
-			List<MediaView> videos = task.getValue();
+			List<File> files = task.getValue();
 			root.getChildren().clear();
+
+			MediaView originalView  = MediaViewFactory.getMediaView(files.get(0));
+			MediaView processedView = MediaViewFactory.getMediaView(files.get(1));
 
 			Label algoLabel = new Label("Algorithme : " + algo.displayName());
 			algoLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
@@ -80,14 +82,14 @@ public class EncryptionSceneController implements Controller
 			topLabels.setAlignment(Pos.CENTER);
 			root.getChildren().addAll(algoLabel, topLabels);
 
-			HBox videoBox = new HBox(20, videos.get(0), videos.get(1));
+			HBox videoBox = new HBox(20, originalView, processedView);
 			videoBox.setAlignment(Pos.CENTER);
 			root.getChildren().add(videoBox);
 
-			videos.get(0).fitWidthProperty().bind(videoBox.widthProperty().subtract(videoBox.getSpacing()).divide(2));
-			videos.get(1).fitWidthProperty().bind(videoBox.widthProperty().subtract(videoBox.getSpacing()).divide(2));
-			videos.get(0).setPreserveRatio(true);
-			videos.get(1).setPreserveRatio(true);
+			originalView.fitWidthProperty().bind(videoBox.widthProperty().subtract(videoBox.getSpacing()).divide(2));
+			processedView.fitWidthProperty().bind(videoBox.widthProperty().subtract(videoBox.getSpacing()).divide(2));
+			originalView.setPreserveRatio(true);
+			processedView.setPreserveRatio(true);
 
 			GoHomeButton goHomeButton = new GoHomeButton();
 			root.getChildren().add(goHomeButton);

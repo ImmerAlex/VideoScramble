@@ -57,10 +57,10 @@ public class BruteForceSceneController implements Controller
 
         File fileToDecrypt = config.inputFile();
 
-        Task<List<MediaView>> task = new Task<>()
+        Task<List<File>> task = new Task<>()
         {
             @Override
-            protected List<MediaView> call() throws Exception
+            protected List<File> call() throws Exception
             {
                 System.out.println("[VideoScramble] Début attaque : méthode=" + attack.displayName()
                         + ", input=" + fileToDecrypt.getAbsolutePath()
@@ -76,18 +76,19 @@ public class BruteForceSceneController implements Controller
                         + "," + result.step() + "), fichier=" + result.outputFile().getAbsolutePath()
                         + " (" + result.outputFile().length() + " octets)");
 
-                MediaView encryptedView = MediaViewFactory.getMediaView(fileToDecrypt);
-                MediaView decryptedView = MediaViewFactory.getMediaView(result.outputFile());
                 updateMessage(result.offset() + ":" + result.step());
-                return List.of(encryptedView, decryptedView);
+                return List.of(fileToDecrypt, result.outputFile());
             }
         };
 
         progressBar.progressProperty().bind(task.progressProperty());
 
         task.setOnSucceeded(event -> {
-            List<MediaView> videos = task.getValue();
+            List<File> files = task.getValue();
             root.getChildren().clear();
+
+            MediaView encryptedView = MediaViewFactory.getMediaView(files.get(0));
+            MediaView decryptedView = MediaViewFactory.getMediaView(files.get(1));
 
             Label methodLabel = new Label("Méthode : " + attack.displayName());
             methodLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
@@ -102,14 +103,14 @@ public class BruteForceSceneController implements Controller
             topLabels.setAlignment(Pos.CENTER);
             root.getChildren().addAll(methodLabel, topLabels);
 
-            HBox videoBox = new HBox(20, videos.get(0), videos.get(1));
+            HBox videoBox = new HBox(20, encryptedView, decryptedView);
             videoBox.setAlignment(Pos.CENTER);
             root.getChildren().add(videoBox);
 
-            videos.get(0).fitWidthProperty().bind(videoBox.widthProperty().subtract(videoBox.getSpacing()).divide(2));
-            videos.get(1).fitWidthProperty().bind(videoBox.widthProperty().subtract(videoBox.getSpacing()).divide(2));
-            videos.get(0).setPreserveRatio(true);
-            videos.get(1).setPreserveRatio(true);
+            encryptedView.fitWidthProperty().bind(videoBox.widthProperty().subtract(videoBox.getSpacing()).divide(2));
+            decryptedView.fitWidthProperty().bind(videoBox.widthProperty().subtract(videoBox.getSpacing()).divide(2));
+            encryptedView.setPreserveRatio(true);
+            decryptedView.setPreserveRatio(true);
 
             GoHomeButton goHomeButton = new GoHomeButton();
             root.getChildren().add(goHomeButton);
