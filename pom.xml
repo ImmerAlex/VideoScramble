@@ -56,6 +56,9 @@
             <manifest>
               <mainClass>fr.aimmer.Main</mainClass>
             </manifest>
+            <manifestEntries>
+              <Add-Opens>javafx.controls/javafx.scene.control ALL-UNNAMED javafx.graphics/javafx.scene ALL-UNNAMED javafx.graphics/com.sun.javafx.application ALL-UNNAMED javafx.media/com.sun.media.jfxmediaimpl ALL-UNNAMED javafx.base/com.sun.javafx.event ALL-UNNAMED</Add-Opens>
+            </manifestEntries>
           </archive>
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
