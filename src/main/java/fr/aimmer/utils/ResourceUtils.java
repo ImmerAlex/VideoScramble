@@ -57,7 +57,7 @@ public final class ResourceUtils
 		File devDir = new File("src/main/resources", classpathDir);
 		if (devDir.isDirectory())
 		{
-			File[] found = devDir.listFiles((_, name) -> {
+			File[] found = devDir.listFiles((dir, name) -> {
 				String lower = name.toLowerCase();
 				return lower.endsWith(".mp4") || lower.endsWith(".avi")
 						|| lower.endsWith(".mkv") || lower.endsWith(".mov")
@@ -75,7 +75,7 @@ public final class ResourceUtils
 			File fsDir = new File(filesystemDir);
 			if (fsDir.isDirectory() && !fsDir.equals(devDir))
 			{
-				File[] found = fsDir.listFiles((_, name) -> {
+				File[] found = fsDir.listFiles((dir, name) -> {
 					String lower = name.toLowerCase();
 					return lower.endsWith(".mp4") || lower.endsWith(".avi")
 							|| lower.endsWith(".mkv") || lower.endsWith(".mov")

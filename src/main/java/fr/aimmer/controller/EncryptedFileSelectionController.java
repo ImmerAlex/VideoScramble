@@ -64,7 +64,7 @@ public class EncryptedFileSelectionController implements Controller
         videoList.setPrefHeight(260);
         List<File> cryptedFiles = findCryptedVideos();
         videoList.getItems().addAll(cryptedFiles);
-        videoList.setCellFactory(_ -> new ListCell<>()
+        videoList.setCellFactory(e -> new ListCell<>()
         {
             @Override
             protected void updateItem(File item, boolean empty)
@@ -85,7 +85,7 @@ public class EncryptedFileSelectionController implements Controller
         launchButton.setPadding(new Insets(10, 40, 10, 40));
         launchButton.setDisable(selectedFile[0] == null);
 
-        browseButton.setOnAction(_ ->
+        browseButton.setOnAction(e ->
         {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Sélectionner une vidéo chiffrée");
@@ -104,7 +104,7 @@ public class EncryptedFileSelectionController implements Controller
             }
         });
 
-        videoList.getSelectionModel().selectedItemProperty().addListener((_, _, newVal) ->
+        videoList.getSelectionModel().selectedItemProperty().addListener((obs, old, newVal) ->
         {
             if (newVal != null) {
                 selectedFile[0] = newVal;
@@ -113,7 +113,7 @@ public class EncryptedFileSelectionController implements Controller
             }
         });
 
-        launchButton.setOnAction(_ ->
+        launchButton.setOnAction(e ->
         {
             AppConfig newConfig = new AppConfig(
                     'D',
@@ -140,7 +140,7 @@ public class EncryptedFileSelectionController implements Controller
 
         if (!cryptedDir.isDirectory()) return videos;
 
-        File[] found = cryptedDir.listFiles((_, name) -> {
+        File[] found = cryptedDir.listFiles((dir, name) -> {
             String lower = name.toLowerCase();
             for (String ext : videoExts) {
                 if (lower.endsWith(ext)) return true;

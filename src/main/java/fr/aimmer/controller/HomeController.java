@@ -19,11 +19,11 @@ public class HomeController implements Controller
 		root.setAlignment(Pos.CENTER);
 
 		Button encryptButton = new Button("Encryption");
-		encryptButton.setOnAction(_ -> SceneManager.getInstance().switchTo("scene:encryption:selection"));
+		encryptButton.setOnAction(e -> SceneManager.getInstance().switchTo("scene:encryption:selection"));
 		encryptButton.setPadding(new Insets(10, 40, 10, 40));
 
 		Button decryptButton = new Button("Décryption");
-		decryptButton.setOnAction(_ -> SceneManager.getInstance().switchTo("scene:decryption:selection"));
+		decryptButton.setOnAction(e -> SceneManager.getInstance().switchTo("scene:decryption:selection"));
 		decryptButton.setPadding(new Insets(10, 40, 10, 40));
 
 		root.getChildren().addAll(encryptButton, decryptButton);

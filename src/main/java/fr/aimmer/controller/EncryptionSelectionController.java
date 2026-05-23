@@ -72,7 +72,7 @@ public class EncryptionSelectionController implements Controller
 		Label descLabel = new Label(type.description());
 
 		Button launchButton = new Button("Sélectionner →");
-		launchButton.setOnAction(_ ->
+		launchButton.setOnAction(e ->
 		{
 			SceneManager sm = SceneManager.getInstance();
 			sm.register("scene:encryption:video-selection",

@@ -79,7 +79,7 @@ public class DecryptionSelectionController implements Controller
         Label descLabel = new Label(type.description());
 
         Button launchButton = new Button("Sélectionner →");
-        launchButton.setOnAction(_ ->
+        launchButton.setOnAction(e ->
         {
             SceneManager sm = SceneManager.getInstance();
             sm.register("scene:decryption:file-selection",

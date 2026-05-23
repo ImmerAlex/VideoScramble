@@ -66,7 +66,7 @@ public class VideoSelectionController implements Controller
 		ListView<File> videoList = new ListView<>();
 		videoList.setPrefHeight(260);
 		videoList.getItems().addAll(findLocalVideos());
-		videoList.setCellFactory(_ -> new ListCell<>()
+		videoList.setCellFactory(e -> new ListCell<>()
 		{
 			@Override
 			protected void updateItem(File item, boolean empty)
@@ -85,7 +85,7 @@ public class VideoSelectionController implements Controller
 		launchButton.setPadding(new Insets(10, 40, 10, 40));
 
 		// Parcourir : ouvre un FileChooser
-		browseButton.setOnAction(_ ->
+		browseButton.setOnAction(e ->
 		{
 			FileChooser fileChooser = new FileChooser();
 			fileChooser.setTitle("Sélectionner une vidéo");
@@ -102,7 +102,7 @@ public class VideoSelectionController implements Controller
 		});
 
 		// Clic dans la liste
-		videoList.getSelectionModel().selectedItemProperty().addListener((_, _, newVal) ->
+		videoList.getSelectionModel().selectedItemProperty().addListener((obs, old, newVal) ->
 		{
 			if (newVal != null) {
 				selectedFile[0] = newVal;
@@ -111,7 +111,7 @@ public class VideoSelectionController implements Controller
 		});
 
 		// Lancement du chiffrement avec le fichier retenu et l'algo sélectionné
-		launchButton.setOnAction(_ ->
+		launchButton.setOnAction(e ->
 		{
 			AppConfig newConfig = new AppConfig(
 					'C',

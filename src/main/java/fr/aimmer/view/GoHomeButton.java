@@ -8,6 +8,6 @@ public class GoHomeButton extends Button
 	public GoHomeButton()
 	{
 		super("Home");
-		this.setOnAction(_ -> SceneManager.getInstance().switchTo("home", true));
+		this.setOnAction(e -> SceneManager.getInstance().switchTo("home", true));
 	}
 }
