@@ -1,5 +1,6 @@
 package fr.aimmer;
 
+import fr.aimmer.utils.ResourceUtils;
 import nu.pattern.OpenCV;
 
 import java.io.File;
@@ -15,10 +16,12 @@ public class Main
 
 		if (args.length == 0) {
 			System.out.println("Aucun argument fourni. Démarrage en mode GUI avec les valeurs par défaut.");
+			File inputFile = ResourceUtils.resolveVideo("video/Pencil_Candle_1280x720.mp4");
+			File outputDir = ResourceUtils.resolveOutputDir(new File("src/main/resources"));
 			config = new AppConfig(
 					'C',
-					new File("src/main/resources/video/Pencil_Candle_1280x720.mp4"),
-					new File("src/main/resources"),
+					inputFile,
+					outputDir,
 					42,
 					13
 			);

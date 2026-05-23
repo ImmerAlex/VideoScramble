@@ -4,6 +4,7 @@ import fr.aimmer.AppConfig;
 import fr.aimmer.Main;
 import fr.aimmer.math.EncryptionMethod;
 import fr.aimmer.ui.scene.SceneManager;
+import fr.aimmer.utils.ResourceUtils;
 import fr.aimmer.view.GoHomeButton;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -20,8 +21,6 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
@@ -134,28 +133,6 @@ public class VideoSelectionController implements Controller
 
 	private List<File> findLocalVideos()
 	{
-		List<File> videos    = new ArrayList<>();
-		String[]   videoExts = { ".mp4", ".avi", ".mkv", ".mov", ".wmv" };
-
-		File[] dirsToScan = {
-				new File("src/main/resources/video")
-		};
-
-		for (File dir : dirsToScan) {
-			if (!dir.isDirectory()) continue;
-			File[] found = dir.listFiles((_, name) -> {
-				String lower = name.toLowerCase();
-				for (String ext : videoExts) {
-					if (lower.endsWith(ext)) return true;
-				}
-				return false;
-			});
-			if (found != null) {
-				Arrays.sort(found);
-				videos.addAll(Arrays.asList(found));
-			}
-		}
-
-		return videos;
+		return ResourceUtils.findLocalVideos("video", null);
 	}
 }
