@@ -47,9 +47,16 @@ public class EncryptionSceneController implements Controller
 			@Override
 			protected List<MediaView> call() throws Exception
 			{
+				System.out.println("[VideoScramble] Début chiffrement : algo=" + algo.displayName()
+						+ ", input=" + config.inputFile().getAbsolutePath()
+						+ ", outputDir=" + config.outputDir().getAbsolutePath());
+
 				File processedFile = config.mode() == 'C'
 						? algo.encrypt(config.inputFile(), config.outputDir())
 						: algo.decrypt(config.inputFile(), config.outputDir());
+
+				System.out.println("[VideoScramble] Chiffrement terminé : " + processedFile.getAbsolutePath()
+						+ " (" + processedFile.length() + " octets)");
 
 				MediaView originalView  = MediaViewFactory.getMediaView(config.inputFile());
 				MediaView processedView = MediaViewFactory.getMediaView(processedFile);
@@ -88,8 +95,11 @@ public class EncryptionSceneController implements Controller
 		});
 
 		task.setOnFailed(event -> {
+			Throwable ex = task.getException();
+			System.err.println("[VideoScramble] ERREUR chiffrement : " + ex.getMessage());
+			ex.printStackTrace(System.err);
 			root.getChildren().clear();
-			root.getChildren().add(new Label("Erreur : " + task.getException().getMessage()));
+			root.getChildren().add(new Label("Erreur : " + ex.getMessage()));
 		});
 
 		new Thread(task).start();

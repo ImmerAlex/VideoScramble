@@ -10,12 +10,14 @@ public class Main
 	public static final int WIDTH  = 1280;
 	public static final int HEIGHT = 720;
 
+	private static final String LOG_PREFIX = "[VideoScramble]";
+
 	public static void main(String[] args)
 	{
 		AppConfig config;
 
 		if (args.length == 0) {
-			System.out.println("Aucun argument fourni. Démarrage en mode GUI avec les valeurs par défaut.");
+			System.out.println(LOG_PREFIX + " Aucun argument fourni. Démarrage en mode GUI avec les valeurs par défaut.");
 			File inputFile = ResourceUtils.resolveVideo("video/Pencil_Candle_1280x720.mp4");
 			File outputDir = ResourceUtils.resolveOutputDir(new File("src/main/resources"));
 			config = new AppConfig(
@@ -35,9 +37,18 @@ public class Main
 			if (config == null) return;
 		}
 
+		System.out.println(LOG_PREFIX + " Config : mode=" + config.mode()
+				+ ", input=" + config.inputFile().getAbsolutePath()
+				+ " (exists=" + config.inputFile().exists() + ", size=" + config.inputFile().length() + ")"
+				+ ", outputDir=" + config.outputDir().getAbsolutePath()
+				+ " (exists=" + config.outputDir().exists() + ")"
+				+ ", offset=" + config.offset()
+				+ ", step=" + config.step());
+
 		try
 		{
 			OpenCV.loadLocally();
+			System.out.println(LOG_PREFIX + " OpenCV chargé avec succès.");
 		}
 		catch (Exception e)
 		{

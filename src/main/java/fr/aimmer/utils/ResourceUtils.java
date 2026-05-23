@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class ResourceUtils
 {
+	private static final String LOG_PREFIX = "[VideoScramble]";
 	private static final Path TEMP_DIR = Path.of(
 			System.getProperty("java.io.tmpdir"), "videoscramble"
 	);
@@ -36,17 +37,25 @@ public final class ResourceUtils
 	{
 		File devFile = new File("src/main/resources", classpathResource);
 		if (devFile.isFile())
+		{
+			System.out.println(LOG_PREFIX + " Vidéo trouvée sur le filesystem (dev) : " + devFile.getAbsolutePath());
 			return devFile;
+		}
 
+		System.out.println(LOG_PREFIX + " Vidéo absente du filesystem, extraction depuis le classpath : " + classpathResource);
 		return extractResource(classpathResource);
 	}
 
 	public static File resolveOutputDir(File preferred)
 	{
 		if (preferred.isDirectory())
+		{
+			System.out.println(LOG_PREFIX + " Dossier de sortie (filesystem) : " + preferred.getAbsolutePath());
 			return preferred;
+		}
 
 		TEMP_DIR.toFile().mkdirs();
+		System.out.println(LOG_PREFIX + " Dossier de sortie (fallback temp) : " + TEMP_DIR.toAbsolutePath());
 		return TEMP_DIR.toFile();
 	}
 
@@ -124,6 +133,9 @@ public final class ResourceUtils
 							throw new FileNotFoundException(
 									"Ressource introuvable dans le classpath : " + path);
 						Files.copy(in, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+						System.out.println(LOG_PREFIX + " Ressource extraite : " + path
+								+ " -> " + tempFile.getAbsolutePath()
+								+ " (" + tempFile.length() + " octets)");
 					}
 				}
 				return tempFile;

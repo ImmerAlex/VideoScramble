@@ -120,6 +120,9 @@ public class VideoSelectionController implements Controller
 					config.offset(),
 					config.step()
 			);
+			System.out.println("[VideoScramble] Lancement chiffrement : algo=" + algoLabel
+					+ ", fichier=" + selectedFile[0].getAbsolutePath()
+					+ " (exists=" + selectedFile[0].exists() + ", size=" + selectedFile[0].length() + ")");
 			EncryptionMethod algo = algoFactory.apply(newConfig);
 			SceneManager sm = SceneManager.getInstance();
 			sm.register("scene:encryption", new EncryptionSceneController(newConfig, algo));

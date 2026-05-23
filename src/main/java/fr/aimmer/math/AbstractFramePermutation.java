@@ -62,6 +62,12 @@ public abstract class AbstractFramePermutation implements EncryptionMethod
 
     private File process(File inputFile, File outputDir, String prefix, boolean inverse)
     {
+        System.out.println("[VideoScramble] Traitement : input=" + inputFile.getAbsolutePath()
+                + " (" + inputFile.length() + " octets)"
+                + ", outputDir=" + outputDir.getAbsolutePath()
+                + ", prefix=" + prefix
+                + ", mode=" + (inverse ? "déchiffrement" : "chiffrement"));
+
         if (!inputFile.isFile())
             throw new RuntimeException("Fichier vidéo introuvable : " + inputFile.getAbsolutePath());
 
@@ -79,6 +85,10 @@ public abstract class AbstractFramePermutation implements EncryptionMethod
         int width  = (int) capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
         int height = (int) capture.get(Videoio.CAP_PROP_FRAME_HEIGHT);
         int fps    = (int) capture.get(Videoio.CAP_PROP_FPS);
+        int total  = (int) capture.get(Videoio.CAP_PROP_FRAME_COUNT);
+
+        System.out.println("[VideoScramble] Vidéo ouverte : " + width + "x" + height
+                + ", " + fps + " fps, " + total + " frames");
 
         if (width <= 0 || height <= 0)
             throw new RuntimeException(
@@ -98,6 +108,8 @@ public abstract class AbstractFramePermutation implements EncryptionMethod
                     + "\nVérifiez les permissions d'écriture et la disponibilité du codec mp4v."
             );
 
+        System.out.println("[VideoScramble] Writer ouvert : " + outputFile.getAbsolutePath());
+
         prepareForResolution(width, height);
 
         Mat frame  = new Mat();
@@ -113,6 +125,9 @@ public abstract class AbstractFramePermutation implements EncryptionMethod
 
         capture.release();
         writer.release();
+
+        System.out.println("[VideoScramble] " + frameCount + " frames traitées, sortie : "
+                + outputFile.getAbsolutePath() + " (" + outputFile.length() + " octets)");
 
         if (frameCount == 0)
             throw new RuntimeException(

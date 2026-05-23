@@ -62,15 +62,22 @@ public class BruteForceSceneController implements Controller
             @Override
             protected List<MediaView> call() throws Exception
             {
+                System.out.println("[VideoScramble] Début attaque : méthode=" + attack.displayName()
+                        + ", input=" + fileToDecrypt.getAbsolutePath()
+                        + ", totalKeys=" + attack.totalKeys());
+
                 BruteForceResult result = attack.attack(
                         fileToDecrypt,
                         config.outputDir(),
                         done -> updateProgress(done, attack.totalKeys())
                 );
 
+                System.out.println("[VideoScramble] Attaque terminée : clé=(" + result.offset()
+                        + "," + result.step() + "), fichier=" + result.outputFile().getAbsolutePath()
+                        + " (" + result.outputFile().length() + " octets)");
+
                 MediaView encryptedView = MediaViewFactory.getMediaView(fileToDecrypt);
                 MediaView decryptedView = MediaViewFactory.getMediaView(result.outputFile());
-                // Transmet la clé trouvée via le message du Task pour l'afficher ensuite
                 updateMessage(result.offset() + ":" + result.step());
                 return List.of(encryptedView, decryptedView);
             }
@@ -110,9 +117,12 @@ public class BruteForceSceneController implements Controller
         });
 
         task.setOnFailed(event -> {
+            Throwable ex = task.getException();
+            System.err.println("[VideoScramble] ERREUR attaque : " + ex.getMessage());
+            ex.printStackTrace(System.err);
             root.getChildren().clear();
             root.getChildren().addAll(
-                    new Label("Erreur : " + task.getException().getMessage()),
+                    new Label("Erreur : " + ex.getMessage()),
                     new GoHomeButton()
             );
         });

@@ -57,17 +57,25 @@ public class NagravisionBruteForce implements DecryptionMethod
     @Override
     public BruteForceResult attack(File encryptedFile, File outputDir, IntConsumer progressCallback)
     {
+        System.out.println("[VideoScramble] BruteForce : input=" + encryptedFile.getAbsolutePath()
+                + " (" + encryptedFile.length() + " octets)"
+                + ", totalKeys=" + TOTAL_KEYS);
+
         VideoCapture capture = new VideoCapture(encryptedFile.getAbsolutePath());
 
         if (!capture.isOpened())
             throw new RuntimeException("Impossible d'ouvrir la vidéo : " + encryptedFile.getAbsolutePath());
 
         int totalFrames = (int) capture.get(Videoio.CAP_PROP_FRAME_COUNT);
+        System.out.println("[VideoScramble] BruteForce : " + totalFrames + " frames, échantillonnage en cours...");
         List<byte[][]> sampledFrames = sampleFrames(capture, totalFrames);
         capture.release();
 
         if (sampledFrames.isEmpty())
             throw new RuntimeException("Impossible de lire des frames de : " + encryptedFile.getName());
+
+        System.out.println("[VideoScramble] BruteForce : " + sampledFrames.size()
+                + " frames échantillonnées, recherche de la clé...");
 
         int height = sampledFrames.get(0).length;
 
@@ -95,6 +103,8 @@ public class NagravisionBruteForce implements DecryptionMethod
         }
 
         File outputFile = new NagravisionAlgorithm(bestOffset, bestStep).decrypt(encryptedFile, outputDir);
+        System.out.println("[VideoScramble] BruteForce terminé : clé=(" + bestOffset + "," + bestStep
+                + "), score=" + bestScore + ", fichier=" + outputFile.getAbsolutePath());
         return new BruteForceResult(outputFile, bestOffset, bestStep);
     }
 
