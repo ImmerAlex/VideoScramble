@@ -62,34 +62,63 @@ public abstract class AbstractFramePermutation implements EncryptionMethod
 
     private File process(File inputFile, File outputDir, String prefix, boolean inverse)
     {
+        if (!inputFile.isFile())
+            throw new RuntimeException("Fichier vidéo introuvable : " + inputFile.getAbsolutePath());
+
         outputDir.mkdirs();
 
         VideoCapture capture = new VideoCapture(inputFile.getAbsolutePath());
+
+        if (!capture.isOpened())
+            throw new RuntimeException(
+                    "Impossible d'ouvrir la vidéo : " + inputFile.getAbsolutePath()
+                    + "\nVérifiez que le fichier existe et que le codec est supporté par OpenCV."
+            );
 
         File outputFile = new File(outputDir, prefix + inputFile.getName());
         int width  = (int) capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
         int height = (int) capture.get(Videoio.CAP_PROP_FRAME_HEIGHT);
         int fps    = (int) capture.get(Videoio.CAP_PROP_FPS);
 
+        if (width <= 0 || height <= 0)
+            throw new RuntimeException(
+                    "Résolution invalide (" + width + "x" + height + ") pour : " + inputFile.getName()
+            );
+
         VideoWriter writer = new VideoWriter(
                 outputFile.getAbsolutePath(),
                 VideoWriter.fourcc('m', 'p', '4', 'v'),
-                fps,
+                fps > 0 ? fps : 30,
                 new Size(width, height)
         );
+
+        if (!writer.isOpened())
+            throw new RuntimeException(
+                    "Impossible de créer la vidéo de sortie : " + outputFile.getAbsolutePath()
+                    + "\nVérifiez les permissions d'écriture et la disponibilité du codec mp4v."
+            );
 
         prepareForResolution(width, height);
 
         Mat frame  = new Mat();
         Mat output = new Mat();
 
-        while (capture.read(frame)) {
+        int frameCount = 0;
+        while (capture.read(frame))
+        {
             transformFrame(frame, output, inverse);
             writer.write(output);
+            frameCount++;
         }
 
         capture.release();
         writer.release();
+
+        if (frameCount == 0)
+            throw new RuntimeException(
+                    "Aucune frame n'a pu être décodée depuis : " + inputFile.getName()
+                    + "\nLe codec vidéo n'est peut-être pas supporté par cette version d'OpenCV."
+            );
 
         return outputFile;
     }

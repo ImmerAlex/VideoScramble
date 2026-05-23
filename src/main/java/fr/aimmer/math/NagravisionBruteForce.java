@@ -119,6 +119,13 @@ public class NagravisionBruteForce implements DecryptionMethod
             capture.set(Videoio.CAP_PROP_POS_FRAMES, pos);
             if (!capture.read(frame) || frame.empty()) continue;
 
+            int actualPos = (int) capture.get(Videoio.CAP_PROP_POS_FRAMES);
+            if (actualPos < pos)
+            {
+                capture.set(Videoio.CAP_PROP_POS_FRAMES, pos);
+                if (!capture.read(frame) || frame.empty()) continue;
+            }
+
             int height   = frame.rows();
             int rowBytes = frame.cols() * frame.channels();
             int sampled  = (rowBytes + COLUMN_STRIDE - 1) / COLUMN_STRIDE;

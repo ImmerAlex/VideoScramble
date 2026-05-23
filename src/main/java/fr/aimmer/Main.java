@@ -35,7 +35,20 @@ public class Main
 			if (config == null) return;
 		}
 
-		OpenCV.loadLocally();
+		try
+		{
+			OpenCV.loadLocally();
+		}
+		catch (Exception e)
+		{
+			System.err.println(
+					"Erreur: Impossible de charger OpenCV.\n"
+					+ "Vérifiez que le répertoire temporaire système est accessible en écriture\n"
+					+ "et n'est pas monté avec l'option 'noexec'.\n"
+					+ "Détail : " + e.getMessage()
+			);
+			System.exit(1);
+		}
 		App.application(config, args);
 	}
 
