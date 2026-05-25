@@ -1,3 +1,18 @@
+/**
+ * VideoScramble — Configuration de session immuable.
+ * <p>
+ * Porte tous les paramètres d'une session : mode (chiffrement/déchiffrement),
+ * fichier vidéo d'entrée, dossier de sortie, et la clé (offset, step).
+ * Construite par {@link fr.aimmer.Main#parseArgs} ou via l'UI.
+ *
+ * @param mode      'C' pour chiffrement, 'D' pour déchiffrement
+ * @param inputFile la vidéo source
+ * @param outputDir le dossier où écrire les fichiers générés
+ * @param offset    décalage r ∈ [0, 255]
+ * @param step      pas s ∈ [0, 127]
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer;
 
 import java.io.File;
@@ -10,6 +25,9 @@ public record AppConfig(
 		int step
 )
 {
+	/**
+	 * Constructeur compact : valide les bornes des paramètres.
+	 */
 	public AppConfig
 	{
 		if (mode != 'C' && mode != 'D')

@@ -1,3 +1,11 @@
+/**
+ * Tests unitaires pour {@link fr.aimmer.math.VideoCryptAlgorithm}.
+ * <p>
+ * Vérifie le déterminisme, la diversité des séquences, et la validité des
+ * points de coupe (strictement dans (0, width)).
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer.math;
 
 import org.junit.jupiter.api.Test;
@@ -26,8 +34,7 @@ class VideoCryptAlgorithmTest
     @Test
     void computeRowCutPoints_allCutsAreInsideFrame()
     {
-        // Cas standard 1280×720 : tous les cuts doivent être strictement dans (0, width)
-        // sinon la ligne ne subirait aucune transformation.
+        // Cas standard 1280×720 : tous les cuts doivent être dans (0, width)
         int[] cuts = VideoCryptAlgorithm.computeRowCutPoints(720, 1280, 12345);
         for (int c : cuts) {
             assertTrue(c > 0 && c < 1280, "cut hors bornes : " + c);
@@ -37,8 +44,8 @@ class VideoCryptAlgorithmTest
     @Test
     void computeRowCutPoints_smallWidth_stillProducesValidCuts()
     {
-        // Edge case : largeur < CUT_POSITIONS. On doit quand même produire des cuts
-        // strictement dans (0, width).
+        // Cas limite : largeur < CUT_POSITIONS (256). On doit quand même produire
+        // des cuts strictement dans (0, width).
         int width  = 80;
         int[] cuts = VideoCryptAlgorithm.computeRowCutPoints(60, width, 7);
         for (int c : cuts) {

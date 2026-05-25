@@ -1,3 +1,12 @@
+/**
+ * VideoScramble — Utilitaires de résolution de ressources (vidéos, dossiers).
+ * <p>
+ * Gère l'extraction des vidéos embarquées dans le JAR vers un dossier temporaire,
+ * la résolution des chemins en mode développement (filesystem) et le scan des
+ * vidéos locales disponibles.
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer.utils;
 
 import java.io.File;
@@ -17,24 +26,36 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ResourceUtils
 {
 	private static final String LOG_PREFIX = "[VideoScramble]";
+
+	/** Dossier temporaire où extraire les ressources du JAR */
 	private static final Path TEMP_DIR = Path.of(
 			System.getProperty("java.io.tmpdir"), "videoscramble"
 	);
 
+	/** Vidéos embarquées dans le classpath (fallback si aucune vidéo locale) */
 	private static final String[] BUNDLED_VIDEOS = {
 			"video/Pencil_Candle_1280x720.mp4",
 			"video/encrypted_Pencil_Candle_1280x720.mp4",
 			"video/oreo_test.mp4"
 	};
 
+	/** Cache des ressources déjà extraites (évite les extractions multiples) */
 	private static final Map<String, File> extractedCache = new ConcurrentHashMap<>();
 
 	private ResourceUtils()
 	{
+		// Classe utilitaire, pas d'instanciation
 	}
 
+	/**
+	 * Résout une vidéo : d'abord sur le filesystem (mode dev), puis depuis le JAR.
+	 *
+	 * @param classpathResource chemin relatif dans les ressources (ex: "video/foo.mp4")
+	 * @return le fichier résolu (sur disque)
+	 */
 	public static File resolveVideo(String classpathResource)
 	{
+		// Mode développement : le fichier est directement sur le filesystem
 		File devFile = new File("src/main/resources", classpathResource);
 		if (devFile.isFile())
 		{
@@ -42,10 +63,18 @@ public final class ResourceUtils
 			return devFile;
 		}
 
+		// Mode JAR : on extrait la ressource vers le dossier temporaire
 		System.out.println(LOG_PREFIX + " Vidéo absente du filesystem, extraction depuis le classpath : " + classpathResource);
 		return extractResource(classpathResource);
 	}
 
+	/**
+	 * Résout le dossier de sortie. Si le dossier préféré n'existe pas, fallback
+	 * sur le dossier temporaire.
+	 *
+	 * @param preferred le dossier souhaité
+	 * @return un dossier existant (le preferred ou le temp)
+	 */
 	public static File resolveOutputDir(File preferred)
 	{
 		if (preferred.isDirectory())
@@ -59,10 +88,19 @@ public final class ResourceUtils
 		return TEMP_DIR.toFile();
 	}
 
+	/**
+	 * Cherche les vidéos disponibles : d'abord dans les ressources locales,
+	 * puis en fallback les vidéos embarquées dans le JAR.
+	 *
+	 * @param classpathDir  sous-dossier dans src/main/resources (ex: "video")
+	 * @param filesystemDir dossier additionnel sur le filesystem (peut être null)
+	 * @return la liste des fichiers vidéo trouvés
+	 */
 	public static List<File> findLocalVideos(String classpathDir, String filesystemDir)
 	{
 		List<File> videos = new ArrayList<>();
 
+		// Dossier de développement
 		File devDir = new File("src/main/resources", classpathDir);
 		if (devDir.isDirectory())
 		{
@@ -79,6 +117,7 @@ public final class ResourceUtils
 			}
 		}
 
+		// Dossier additionnel (s'il est différent du dev)
 		if (filesystemDir != null)
 		{
 			File fsDir = new File(filesystemDir);
@@ -98,6 +137,7 @@ public final class ResourceUtils
 			}
 		}
 
+		// Fallback : vidéos embarquées dans le JAR
 		if (videos.isEmpty())
 		{
 			for (String resource : BUNDLED_VIDEOS)
@@ -108,6 +148,7 @@ public final class ResourceUtils
 				}
 				catch (UncheckedIOException ignored)
 				{
+					// Ressource absente du classpath, on ignore
 				}
 			}
 		}
@@ -115,6 +156,14 @@ public final class ResourceUtils
 		return videos;
 	}
 
+	/**
+	 * Extrait une ressource du classpath vers le dossier temporaire.
+	 * Les extractions sont cachées pour éviter les doublons.
+	 *
+	 * @param resourcePath chemin de la ressource dans le classpath
+	 * @return le fichier extrait sur le disque
+	 * @throws UncheckedIOException si l'extraction échoue
+	 */
 	private static File extractResource(String resourcePath)
 	{
 		return extractedCache.computeIfAbsent(resourcePath, path -> {

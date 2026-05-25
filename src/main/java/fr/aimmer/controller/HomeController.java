@@ -1,3 +1,11 @@
+/**
+ * VideoScramble — Écran d'accueil.
+ * <p>
+ * Premier écran affiché au lancement. Propose deux boutons : chiffrement et
+ * déchiffrement, qui redirigent vers les écrans de sélection correspondants.
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer.controller;
 
 import fr.aimmer.ui.scene.SceneManager;
@@ -12,6 +20,11 @@ import static fr.aimmer.Main.WIDTH;
 
 public class HomeController implements Controller
 {
+	/**
+	 * Construit la scène d'accueil avec deux boutons centrés.
+	 *
+	 * @return la scène "home"
+	 */
 	@Override
 	public Scene get()
 	{

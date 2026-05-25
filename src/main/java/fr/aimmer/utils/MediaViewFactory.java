@@ -1,3 +1,11 @@
+/**
+ * VideoScramble — Fabrique de {@link javafx.scene.media.MediaView} pour lecture vidéo.
+ * <p>
+ * Crée un MediaView à partir d'un fichier, avec gestion basique des erreurs
+ * et logs de debug.
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer.utils;
 
 import javafx.application.Platform;
@@ -9,6 +17,12 @@ import java.io.File;
 
 public class MediaViewFactory
 {
+	/**
+	 * Crée un {@link MediaView} prêt à être affiché, lecture lancée.
+	 *
+	 * @param file le fichier vidéo à lire
+	 * @return le MediaView configuré
+	 */
 	public static MediaView getMediaView(File file)
 	{
 		System.out.println("[VideoScramble] MediaView : " + file.getAbsolutePath()
@@ -17,6 +31,7 @@ public class MediaViewFactory
 		Media       media       = new Media(file.toURI().toString());
 		MediaPlayer mediaPlayer = new MediaPlayer(media);
 
+		// Log des problèmes éventuels
 		mediaPlayer.setOnError(() ->
 				System.err.println("[VideoScramble] MediaPlayer erreur : "
 						+ mediaPlayer.getError() + " — " + file.getName()));
@@ -29,7 +44,7 @@ public class MediaViewFactory
 
 		MediaView   mediaView   = new MediaView(mediaPlayer);
 		mediaView.preserveRatioProperty().set(true);
-		mediaPlayer.play();
+		mediaPlayer.play(); // lecture automatique
 
 		return mediaView;
 	}

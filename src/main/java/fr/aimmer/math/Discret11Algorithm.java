@@ -1,11 +1,5 @@
-package fr.aimmer.math;
-
-import org.opencv.core.Mat;
-
-import java.util.Random;
-
 /**
- * Chiffrement inspiré du système Discret 11 (Canal+, 1984).
+ * VideoScramble — Chiffrement inspiré du système Discret 11 (Canal+, 1984).
  * <p>
  * Principe : chaque ligne de l'image est décalée horizontalement de l'un
  * de N valeurs possibles (0, 902 ns ou 1804 ns dans l'original analogique).
@@ -18,16 +12,27 @@ import java.util.Random;
  * <p>
  * Algorithme symétrique : chiffrer puis déchiffrer avec la même graine restaure
  * l'image originale.
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
  */
+package fr.aimmer.math;
+
+import org.opencv.core.Mat;
+
+import java.util.Random;
+
 public class Discret11Algorithm extends AbstractFramePermutation
 {
-    // Pas du décalage horizontal (en pixels). 3 niveaux possibles : 0, +UNIT, +2*UNIT.
+    /** Pas du décalage horizontal (en pixels). 3 niveaux possibles : 0, +UNIT, +2*UNIT. */
     private static final int SHIFT_UNIT   = 4;
     private static final int SHIFT_LEVELS = 3;
 
     private final int seed;
     private int frameIndex;
 
+    /**
+     * @param seed la graine du PRNG (dérivée de offset*128+step dans l'UI)
+     */
     public Discret11Algorithm(int seed)
     {
         this.seed = seed;
@@ -54,6 +59,7 @@ public class Discret11Algorithm extends AbstractFramePermutation
     @Override
     protected void transformFrame(Mat source, Mat dest, boolean inverse)
     {
+        // La graine varie avec la frame pour un brouillage dynamique
         int[] shifts = computeRowShifts(source.rows(), seed + frameIndex);
         applyRowShifts(source, dest, shifts, inverse);
         frameIndex++;
@@ -64,14 +70,19 @@ public class Discret11Algorithm extends AbstractFramePermutation
      * Valeurs possibles : 0, SHIFT_UNIT, 2*SHIFT_UNIT (3 niveaux comme l'original).
      * <p>
      * La séquence est déterministe pour une même graine.
+     *
+     * @param height nombre de lignes
+     * @param seed   la graine effective (seed + frameIndex)
+     * @return tableau des décalages par ligne
      */
-    // package-private pour les tests unitaires
+    // package-private pour les tests
     static int[] computeRowShifts(int height, int seed)
     {
         int[] shifts = new int[height];
         Random rng = new Random(seed);
 
         for (int i = 0; i < height; i++) {
+            // On tire un niveau parmi {0, 1, 2} et on le multiplie par SHIFT_UNIT
             int level = rng.nextInt(SHIFT_LEVELS);
             shifts[i] = level * SHIFT_UNIT;
         }
@@ -84,24 +95,30 @@ public class Discret11Algorithm extends AbstractFramePermutation
      * et inversement). Préserve toute l'information : l'algorithme reste
      * strictement réversible.
      * <p>
-     * En mode direct  : dest[i, x] = source[i, (x - shifts[i]) mod w]   (pixels glissent vers la droite)
-     * En mode inverse : dest[i, x] = source[i, (x + shifts[i]) mod w]
+     * En mode direct  : dest[i, x] = source[i, (x - shift) mod w]
+     * En mode inverse : dest[i, x] = source[i, (x + shift) mod w]
+     *
+     * @param source  frame d'entrée
+     * @param dest    frame de sortie
+     * @param shifts  décalages par ligne
+     * @param inverse {@code true} = mode déchiffrement (shift inversé)
      */
     private static void applyRowShifts(Mat source, Mat dest, int[] shifts, boolean inverse)
     {
-        // copyTo : alloue dest si nécessaire et couvre les lignes à shift nul.
+        // copyTo : alloue dest si nécessaire et couvre les lignes à shift nul
         source.copyTo(dest);
 
         int width = source.cols();
         for (int i = 0; i < shifts.length; i++) {
+            // Le signe du shift détermine le sens du wrap-around
             int s = inverse ? -shifts[i] : shifts[i];
-            // Normalise dans [0, width). cut == 0 => ligne inchangée.
+            // Normalisation du cut dans [0, width)
             int cut = ((s % width) + width) % width;
-            if (cut == 0) continue;
+            if (cut == 0) continue; // rien à faire pour cette ligne
 
-            // dest[0, cut)        ← source[w-cut, w)   (queue ramenée à gauche)
+            // dest[0, cut)        ← source[width-cut, width)   (queue ramenée à gauche)
             source.row(i).colRange(width - cut, width).copyTo(dest.row(i).colRange(0, cut));
-            // dest[cut, w)        ← source[0, w-cut)   (tête poussée à droite)
+            // dest[cut, width)    ← source[0, width-cut)       (tête poussée à droite)
             source.row(i).colRange(0, width - cut).copyTo(dest.row(i).colRange(cut, width));
         }
     }

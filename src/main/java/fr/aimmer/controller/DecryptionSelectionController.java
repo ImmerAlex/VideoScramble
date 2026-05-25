@@ -1,3 +1,16 @@
+/**
+ * VideoScramble — Écran de sélection de la méthode de déchiffrement (attaque).
+ * <p>
+ * Propose trois métriques pour l'attaque par force brute sur Nagravision :
+ * distance euclidienne, corrélation de Pearson, variation totale (L1).
+ * Chaque métrique est encapsulée dans un {@link fr.aimmer.math.NagravisionBruteForce}
+ * pré-paramétré avec la {@link fr.aimmer.math.RowScoringFunction} correspondante.
+ * <p>
+ * Note importante : ces attaques ne fonctionnent QUE sur du Nagravision.
+ * Discret 11 et VideoCrypt nécessiteraient des attaquants dédiés.
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer.controller;
 
 import fr.aimmer.AppConfig;
@@ -25,7 +38,7 @@ import java.util.List;
 public class DecryptionSelectionController implements Controller
 {
     // NagravisionBruteForce est sans état mutable : une instance partagée par
-    // type de scoring est sûre, même si plusieurs scènes s'enchaînent.
+    // type de scoring est sûre, même si plusieurs sessions s'enchaînent.
     private static final List<DecryptionType> TYPES = List.of(
             new DecryptionType("Euclide",
                     "Force brute — distance euclidienne (L2) entre lignes adjacentes",
@@ -85,11 +98,19 @@ public class DecryptionSelectionController implements Controller
     );
     private final AppConfig config;
 
+    /**
+     * @param config la configuration de session
+     */
     public DecryptionSelectionController(AppConfig config)
     {
         this.config = config;
     }
 
+    /**
+     * Construit l'écran de sélection de la méthode de déchiffrement.
+     *
+     * @return la scène avec les 3 cartes d'attaque
+     */
     @Override
     public Scene get()
     {
@@ -100,6 +121,7 @@ public class DecryptionSelectionController implements Controller
         Label title = new Label("Méthode de déchiffrement");
         title.setFont(Font.font("System", FontWeight.BOLD, 18));
 
+        // Avertissement : le brute force ne fonctionne que sur Nagravision
         Label warning = new Label(
                 "Force brute sur l'espace de clés de Nagravision (offset × step). "
                 + "Une vidéo chiffrée par Discret 11 ou VideoCrypt ne pourra pas être restaurée ici : "
@@ -119,6 +141,12 @@ public class DecryptionSelectionController implements Controller
         return new Scene(root, Main.WIDTH, Main.HEIGHT);
     }
 
+    /**
+     * Construit une carte UI pour un type d'attaque.
+     *
+     * @param type les infos de la méthode d'attaque
+     * @return une VBox contenant la carte
+     */
     private VBox buildCard(DecryptionType type)
     {
         Label nameLabel = new Label(type.label());
@@ -159,7 +187,7 @@ public class DecryptionSelectionController implements Controller
         return card;
     }
 
-    // Ajouter ici les futurs algorithmes de déchiffrement (1 ligne dans TYPES suffit)
+    // Ajouter ici les futures méthodes de déchiffrement (1 ligne dans TYPES suffit)
     private record DecryptionType(
             String label,
             String description,

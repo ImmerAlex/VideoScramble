@@ -1,3 +1,11 @@
+/**
+ * Tests unitaires pour {@link fr.aimmer.math.scoring.L1Scoring}.
+ * <p>
+ * Vérifie le score (somme des |Δ|) pour des lignes identiques, avec une
+ * différence connue, et le traitement correct des bytes signés en non signé.
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer.math.scoring;
 
 import org.junit.jupiter.api.Test;
@@ -28,7 +36,8 @@ class L1ScoringTest
     @Test
     void score_handlesUnsignedBytes()
     {
-        // 200 stocké en byte signé est -56 ; le scoring doit interpréter en non-signé
+        // 200 stocké en byte signé = -56 ; le scoring doit interpréter en non-signé
+        // → |200 - 100| = 100 (et non |-56 - 100| = 156)
         byte[] a = { (byte) 200 };
         byte[] b = { 100 };
         assertEquals(100.0, scoring.score(a, b));

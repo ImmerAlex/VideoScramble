@@ -1,3 +1,11 @@
+/**
+ * VideoScramble — Chiffrement/Déchiffrement vidéo inspiré des systèmes analogiques.
+ * <p>
+ * Point d'entrée principal. Gère le parsing des arguments CLI, le chargement
+ * d'OpenCV et le lancement de l'application JavaFX.
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer;
 
 import fr.aimmer.utils.ResourceUtils;
@@ -7,16 +15,25 @@ import java.io.File;
 
 public class Main
 {
+	/** Largeur par défaut de la fenêtre JavaFX */
 	public static final int WIDTH  = 1280;
+	/** Hauteur par défaut de la fenêtre JavaFX */
 	public static final int HEIGHT = 720;
 
 	private static final String LOG_PREFIX = "[VideoScramble]";
 
+	/**
+	 * Point d'entrée. Sans argument → mode GUI avec la vidéo embarquée.
+	 * Avec arguments → mode CLI (chiffrement/déchiffrement Nagravision).
+	 *
+	 * @param args arguments de la ligne de commande
+	 */
 	public static void main(String[] args)
 	{
 		AppConfig config;
 
 		if (args.length == 0) {
+			// Mode graphique : on prend la vidéo de démo embarquée et des valeurs par défaut
 			System.out.println(LOG_PREFIX + " Aucun argument fourni. Démarrage en mode GUI avec les valeurs par défaut.");
 			File inputFile = ResourceUtils.resolveVideo("video/Pencil_Candle_1280x720.mp4");
 			File outputDir = ResourceUtils.resolveOutputDir(new File("src/main/resources"));
@@ -37,6 +54,7 @@ public class Main
 			if (config == null) return;
 		}
 
+		// Affichage de la config pour debug
 		System.out.println(LOG_PREFIX + " Config : mode=" + config.mode()
 				+ ", input=" + config.inputFile().getAbsolutePath()
 				+ " (exists=" + config.inputFile().exists() + ", size=" + config.inputFile().length() + ")"
@@ -45,6 +63,7 @@ public class Main
 				+ ", offset=" + config.offset()
 				+ ", step=" + config.step());
 
+		// Chargement OpenCV : on essaie d'abord la lib système (meilleur support codec)
 		try
 		{
 			System.loadLibrary("opencv_java");
@@ -72,6 +91,14 @@ public class Main
 		App.application(config, args);
 	}
 
+	/**
+	 * Parse les arguments de la ligne de commande pour construire une {@link AppConfig}.
+	 * <p>
+	 * Format attendu : {@code <C|D> <vidéo> <dossier_sortie> [--r offset] [--s step]}.
+	 *
+	 * @param args les arguments bruts du main
+	 * @return la config parsée, ou {@code null} en cas d'erreur (le programme quitte)
+	 */
 	private static AppConfig parseArgs(String[] args)
 	{
 		if (args.length < 3) {
@@ -95,6 +122,7 @@ public class Main
 			int offset = 42;
 			int step   = 13;
 
+			// Options nommées (peuvent être omises, on garde les défauts)
 			for (int i = 3; i < args.length; i += 2) {
 				switch (args[i]) {
 					case "--r" -> {
@@ -124,6 +152,11 @@ public class Main
 		return null;
 	}
 
+	/**
+	 * Affiche un message d'erreur, puis l'aide, puis quitte.
+	 *
+	 * @param msg le message d'erreur
+	 */
 	private static void error(String msg)
 	{
 		System.err.println("Erreur: " + msg + "\n");
@@ -131,6 +164,9 @@ public class Main
 		System.exit(1);
 	}
 
+	/**
+	 * Affiche l'aide de la ligne de commande sur stdout.
+	 */
 	private static void printHelp()
 	{
 		String help = """

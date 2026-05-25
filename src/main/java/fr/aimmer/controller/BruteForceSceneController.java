@@ -1,3 +1,16 @@
+/**
+ * VideoScramble — Scène de résultat d'attaque par force brute.
+ * <p>
+ * Affiche côte à côte la vidéo chiffrée et la vidéo déchiffrée, avec la clé
+ * retrouvée (offset, step). L'attaque est lancée dans un {@link javafx.concurrent.Task}
+ * pour ne pas bloquer l'UI, avec une barre de progression.
+ * <p>
+ * Controller générique paramétré par le {@link fr.aimmer.math.DecryptionMethod}
+ * à appliquer. Ajouter une nouvelle métrique ne nécessite pas de nouveau
+ * controller, juste une entrée dans {@link DecryptionSelectionController}.
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer.controller;
 
 import fr.aimmer.AppConfig;
@@ -21,24 +34,29 @@ import javafx.scene.text.FontWeight;
 import java.io.File;
 import java.util.List;
 
-/**
- * Scène générique de résultat pour une attaque par force brute.
- * <p>
- * Paramétrée par le {@link DecryptionMethod} à appliquer — ajouter une nouvelle
- * métrique ne nécessite pas de nouveau controller, juste une nouvelle entrée
- * dans {@link DecryptionSelectionController}.
- */
 public class BruteForceSceneController implements Controller
 {
     private final AppConfig config;
     private final DecryptionMethod attack;
 
+    /**
+     * @param config la configuration de session
+     * @param attack la méthode d'attaque à utiliser
+     */
     public BruteForceSceneController(AppConfig config, DecryptionMethod attack)
     {
         this.config = config;
         this.attack = attack;
     }
 
+    /**
+     * Construit la scène de brute force.
+     * <p>
+     * Affiche une barre de progression pendant l'attaque, puis les deux vidéos
+     * (chiffrée / déchiffrée) avec la clé retrouvée.
+     *
+     * @return la scène de résultat d'attaque
+     */
     @Override
     public Scene get()
     {
@@ -57,6 +75,7 @@ public class BruteForceSceneController implements Controller
 
         File fileToDecrypt = config.inputFile();
 
+        // Tâche de fond : brute force
         Task<List<File>> task = new Task<>()
         {
             @Override
@@ -69,6 +88,7 @@ public class BruteForceSceneController implements Controller
                 BruteForceResult result = attack.attack(
                         fileToDecrypt,
                         config.outputDir(),
+                        // callback de progression : met à jour la barre
                         done -> updateProgress(done, attack.totalKeys())
                 );
 
@@ -76,23 +96,27 @@ public class BruteForceSceneController implements Controller
                         + "," + result.step() + "), fichier=" + result.outputFile().getAbsolutePath()
                         + " (" + result.outputFile().length() + " octets)");
 
+                // On triche un peu : on passe la clé via le message de la Task
                 updateMessage(result.offset() + ":" + result.step());
                 return List.of(fileToDecrypt, result.outputFile());
             }
         };
 
+        // Binding barre de progression ↔ progression de la tâche
         progressBar.progressProperty().bind(task.progressProperty());
 
         task.setOnSucceeded(event -> {
             List<File> files = task.getValue();
             root.getChildren().clear();
 
+            // Vidéo chiffrée (gauche) et déchiffrée (droite)
             MediaView encryptedView = MediaViewFactory.getMediaView(files.get(0));
             MediaView decryptedView = MediaViewFactory.getMediaView(files.get(1));
 
             Label methodLabel = new Label("Méthode : " + attack.displayName());
             methodLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
 
+            // Récupération de la clé depuis le message de la Task
             String[] keyParts = task.getMessage().split(":");
             Label offsetLabel = new Label("OFFSET: " + keyParts[0]);
             offsetLabel.setFont(Font.font("System", FontWeight.BOLD, 14));

@@ -1,3 +1,15 @@
+/**
+ * VideoScramble — Écran de sélection du fichier vidéo à chiffrer.
+ * <p>
+ * Propose deux moyens de choisir la vidéo source : un explorateur de fichiers
+ * (FileChooser) ou une liste des vidéos disponibles localement dans les ressources
+ * du projet. Le fichier retenu est passé au controller de chiffrement suivant.
+ * <p>
+ * Cette scène est enregistrée dynamiquement par {@link EncryptionSelectionController}
+ * car elle dépend de l'algorithme choisi.
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer.controller;
 
 import fr.aimmer.AppConfig;
@@ -30,6 +42,11 @@ public class VideoSelectionController implements Controller
 	private final String algoLabel;
 	private final Function<AppConfig, EncryptionMethod> algoFactory;
 
+	/**
+	 * @param config      la config de session
+	 * @param algoLabel   nom de l'algo pour l'affichage (ex: "Nagravision")
+	 * @param algoFactory fabrique d'{@link EncryptionMethod} à partir de la config
+	 */
 	public VideoSelectionController(AppConfig config, String algoLabel,
 	                                Function<AppConfig, EncryptionMethod> algoFactory)
 	{
@@ -38,6 +55,11 @@ public class VideoSelectionController implements Controller
 		this.algoFactory = algoFactory;
 	}
 
+	/**
+	 * Construit l'écran de sélection de fichier vidéo.
+	 *
+	 * @return la scène avec le FileChooser et la liste locale
+	 */
 	@Override
 	public Scene get()
 	{
@@ -52,6 +74,7 @@ public class VideoSelectionController implements Controller
 		Label browseTitle = new Label("Fichier sélectionné :");
 		browseTitle.setFont(Font.font("System", FontWeight.BOLD, 14));
 
+		// Affiche le nom du fichier courant (celui de la config par défaut)
 		Label selectedFileLabel = new Label(config.inputFile().getName());
 
 		Button browseButton = new Button("Parcourir…");
@@ -76,7 +99,7 @@ public class VideoSelectionController implements Controller
 			}
 		});
 
-		// Fichier retenu (tableau à un élément pour mutation dans les lambdas)
+		// Fichier retenu : on passe par un tableau pour pouvoir muter dans les lambdas
 		File[] selectedFile = { config.inputFile() };
 
 		// --- Bouton de lancement ---
@@ -101,7 +124,7 @@ public class VideoSelectionController implements Controller
 			}
 		});
 
-		// Clic dans la liste
+		// Clic dans la liste : met à jour le fichier sélectionné
 		videoList.getSelectionModel().selectedItemProperty().addListener((obs, old, newVal) ->
 		{
 			if (newVal != null) {
@@ -110,7 +133,7 @@ public class VideoSelectionController implements Controller
 			}
 		});
 
-		// Lancement du chiffrement avec le fichier retenu et l'algo sélectionné
+		// Lancement du chiffrement avec le fichier retenu
 		launchButton.setOnAction(e ->
 		{
 			AppConfig newConfig = new AppConfig(
@@ -134,6 +157,11 @@ public class VideoSelectionController implements Controller
 		return new Scene(root, Main.WIDTH, Main.HEIGHT);
 	}
 
+	/**
+	 * Cherche les vidéos disponibles dans les ressources du projet.
+	 *
+	 * @return la liste des fichiers vidéo trouvés localement
+	 */
 	private List<File> findLocalVideos()
 	{
 		return ResourceUtils.findLocalVideos("video", null);

@@ -1,3 +1,11 @@
+/**
+ * Tests unitaires pour {@link fr.aimmer.utils.MathUtils}.
+ * <p>
+ * Vérifie la fonction {@code largestPowerOfTwo} sur des cas exacts,
+ * non-exacts et les cas limites (zéro, négatif).
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer.utils;
 
 import org.junit.jupiter.api.Test;

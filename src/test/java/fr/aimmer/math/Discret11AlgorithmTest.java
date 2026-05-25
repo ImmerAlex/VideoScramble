@@ -1,3 +1,12 @@
+/**
+ * Tests unitaires pour {@link fr.aimmer.math.Discret11Algorithm}.
+ * <p>
+ * Vérifie le déterminisme du PRNG (même graine → même séquence), la diversité
+ * (graines différentes → séquences différentes) et les niveaux de shift autorisés
+ * ({0, 4, 8}).
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer.math;
 
 import org.junit.jupiter.api.Test;

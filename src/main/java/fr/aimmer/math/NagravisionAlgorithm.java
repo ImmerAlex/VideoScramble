@@ -1,12 +1,5 @@
-package fr.aimmer.math;
-
-import org.opencv.core.Mat;
-
-import static fr.aimmer.utils.MathUtils.largestPowerOfTwo;
-
 /**
- * Chiffrement de type Nagravision : permutation des lignes de chaque frame
- * par blocs de puissance de 2.
+ * VideoScramble — Chiffrement de type Nagravision : permutation des lignes par blocs de puissance de 2.
  * <p>
  * Pour chaque bloc de hauteur {@code blockSize} :
  * <pre>
@@ -19,13 +12,25 @@ import static fr.aimmer.utils.MathUtils.largestPowerOfTwo;
  * <p>
  * Algorithme symétrique : la même opération avec les mêmes paramètres
  * chiffre puis déchiffre (la variation par frame est déterministe).
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
  */
+package fr.aimmer.math;
+
+import org.opencv.core.Mat;
+
+import static fr.aimmer.utils.MathUtils.largestPowerOfTwo;
+
 public class NagravisionAlgorithm extends AbstractFramePermutation
 {
     private final int offset;
     private final int step;
     private int frameIndex;
 
+    /**
+     * @param offset décalage r ∈ [0, 255]
+     * @param step   pas s ∈ [0, 127]
+     */
     public NagravisionAlgorithm(int offset, int step)
     {
         this.offset = offset;
@@ -47,12 +52,14 @@ public class NagravisionAlgorithm extends AbstractFramePermutation
     @Override
     protected void prepareForResolution(int width, int height)
     {
+        // On réinitialise le compteur de frames à chaque nouvelle vidéo
         this.frameIndex = 0;
     }
 
     @Override
     protected void transformFrame(Mat source, Mat dest, boolean inverse)
     {
+        // L'offset varie avec le numéro de frame (modulo 256)
         int effectiveOffset = (offset + frameIndex) & 0xFF;
         int[] mapping = computeRowMapping(source.rows(), effectiveOffset, step);
         if (inverse)
@@ -62,7 +69,18 @@ public class NagravisionAlgorithm extends AbstractFramePermutation
         frameIndex++;
     }
 
-    // package-private pour les tests unitaires et NagravisionBruteForce
+    /**
+     * Calcule le mapping des lignes pour une permutation Nagravision.
+     * <p>
+     * Décompose la hauteur en blocs de plus grande puissance de 2,
+     * puis permute chaque bloc avec la formule de Nagravision.
+     *
+     * @param height hauteur de l'image en pixels
+     * @param offset décalage (offset effectif, déjà modulé par le numéro de frame)
+     * @param step   pas
+     * @return tableau mapping[i] = position de la ligne i dans l'image chiffrée
+     */
+    // package-private : utilisé par les tests et NagravisionBruteForce
     static int[] computeRowMapping(int height, int offset, int step)
     {
         int[] mapping = new int[height];
@@ -70,6 +88,7 @@ public class NagravisionAlgorithm extends AbstractFramePermutation
         int remaining = height;
         int destIndex = 0;
 
+        // On traite la hauteur par blocs de puissance de 2 décroissants
         while (remaining > 1) {
             int blockSize = largestPowerOfTwo(remaining);
 
@@ -82,6 +101,7 @@ public class NagravisionAlgorithm extends AbstractFramePermutation
             remaining -= blockSize;
         }
 
+        // La dernière ligne (si hauteur impaire) reste à sa place
         if (remaining == 1) {
             mapping[destIndex] = base;
         }
@@ -89,7 +109,9 @@ public class NagravisionAlgorithm extends AbstractFramePermutation
         return mapping;
     }
 
-    // dest[mapping[i]] = source[i]
+    /**
+     * Applique la permutation directe : dest[mapping[i]] = source[i].
+     */
     private static void applyRowPermutation(Mat source, Mat dest, int[] mapping)
     {
         source.copyTo(dest);
@@ -98,7 +120,10 @@ public class NagravisionAlgorithm extends AbstractFramePermutation
         }
     }
 
-    // dest[i] = source[mapping[i]]  — opération inverse, utilisée pour le déchiffrement
+    /**
+     * Applique la permutation inverse : dest[i] = source[mapping[i]].
+     * Utilisée pour le déchiffrement.
+     */
     private static void applyInverseRowPermutation(Mat source, Mat dest, int[] mapping)
     {
         source.copyTo(dest);

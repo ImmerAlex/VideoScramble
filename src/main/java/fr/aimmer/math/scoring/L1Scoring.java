@@ -1,9 +1,5 @@
-package fr.aimmer.math.scoring;
-
-import fr.aimmer.math.RowScoringFunction;
-
 /**
- * Distance L1 (Manhattan / variation totale) entre deux lignes.
+ * VideoScramble — Distance L1 (Manhattan / variation totale) entre deux lignes.
  * <pre>
  *   d(x, y) = Σ |xi - yi|
  * </pre>
@@ -13,9 +9,22 @@ import fr.aimmer.math.RowScoringFunction;
  * outliers (pixels aberrants) et favorise les images "lisses" sans pénaliser
  * excessivement quelques fortes discontinuités. Aussi moins coûteuse
  * (pas de carré, pas de sqrt).
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
  */
+package fr.aimmer.math.scoring;
+
+import fr.aimmer.math.RowScoringFunction;
+
 public class L1Scoring implements RowScoringFunction
 {
+    /**
+     * Somme des valeurs absolues des différences pixel à pixel.
+     *
+     * @param row1 première ligne (bytes non signés)
+     * @param row2 seconde ligne
+     * @return la somme des |Δ|
+     */
     @Override
     public double score(byte[] row1, byte[] row2)
     {

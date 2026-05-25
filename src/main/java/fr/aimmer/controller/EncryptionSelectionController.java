@@ -1,3 +1,17 @@
+/**
+ * VideoScramble — Écran de sélection de la méthode de chiffrement.
+ * <p>
+ * Affiche une carte par algorithme disponible (Nagravision, Discret 11, VideoCrypt).
+ * Chaque carte présente un titre, une description courte, un bouton d'info détaillée
+ * et un bouton pour lancer le processus.
+ * <p>
+ * C'est ici qu'on choisit quel algo sera utilisé pour le chiffrement. La clé
+ * (offset, step) vient de l'{@link fr.aimmer.AppConfig} et est partagée entre
+ * tous les algos — pour Discret 11 et VideoCrypt, on dérive une graine à partir
+ * de {@code offset * 128 + step}.
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer.controller;
 
 import fr.aimmer.AppConfig;
@@ -24,9 +38,10 @@ import java.util.function.Function;
 
 public class EncryptionSelectionController implements Controller
 {
-	// La graine pour les algorithmes basés sur PRNG (Discret 11, VideoCrypt) est
-	// dérivée de (offset, step) → 256 × 128 = 32 768 graines distinctes, ce qui
-	// aligne leur espace de clés sur celui de Nagravision pour la démo.
+	// La graine pour les PRNG (Discret 11, VideoCrypt) est dérivée de (offset, step)
+	// → offset * 128 + step = 32 768 graines distinctes, alignées sur l'espace de
+	// clés de Nagravision. Pratique pour la démo vu que l'utilisateur règle toujours
+	// offset/step quel que soit l'algo choisi.
 	private static final List<EncryptionType> TYPES = List.of(
 			new EncryptionType("Nagravision",
 					"Permutation des lignes par blocs de puissance de 2",
@@ -76,11 +91,19 @@ public class EncryptionSelectionController implements Controller
 
 	private final AppConfig config;
 
+	/**
+	 * @param config la configuration de session (porte offset/step pour tous les algos)
+	 */
 	public EncryptionSelectionController(AppConfig config)
 	{
 		this.config = config;
 	}
 
+	/**
+	 * Construit l'écran de sélection de chiffrement.
+	 *
+	 * @return la scène avec les cartes des 3 algorithmes
+	 */
 	@Override
 	public Scene get()
 	{
@@ -92,6 +115,7 @@ public class EncryptionSelectionController implements Controller
 		title.setFont(Font.font("System", FontWeight.BOLD, 18));
 		root.getChildren().add(title);
 
+		// Une carte par algo
 		for (EncryptionType type : TYPES) {
 			root.getChildren().add(buildCard(type));
 		}
@@ -101,11 +125,18 @@ public class EncryptionSelectionController implements Controller
 		return new Scene(root, Main.WIDTH, Main.HEIGHT);
 	}
 
+	/**
+	 * Construit la carte UI pour un type de chiffrement donné.
+	 *
+	 * @param type les infos de l'algo (nom, description, factory...)
+	 * @return une VBox contenant la carte complète
+	 */
 	private VBox buildCard(EncryptionType type)
 	{
 		Label nameLabel = new Label(type.label());
 		nameLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
 
+		// Petit bouton "?" pour les détails techniques
 		Button infoButton = new Button("?");
 		infoButton.setStyle("-fx-font-size: 11px; -fx-padding: 1 6 1 6; -fx-min-width: 24px;");
 		infoButton.setOnAction(e ->
@@ -122,6 +153,7 @@ public class EncryptionSelectionController implements Controller
 
 		Label descLabel = new Label(type.description());
 
+		// Le bouton principal : lance la sélection de fichier pour cet algo
 		Button launchButton = new Button("Sélectionner →");
 		launchButton.setOnAction(e ->
 		{
@@ -140,7 +172,8 @@ public class EncryptionSelectionController implements Controller
 		return card;
 	}
 
-	// Ajouter ici les futurs algorithmes de chiffrement (1 ligne dans TYPES suffit)
+	// Stocke les infos d'un algo pour l'affichage dans la carte.
+	// Ajouter un nouvel algo ici = juste une ligne dans TYPES.
 	private record EncryptionType(
 			String label,
 			String description,

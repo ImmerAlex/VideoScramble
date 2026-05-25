@@ -1,3 +1,15 @@
+/**
+ * VideoScramble — Écran de sélection du fichier chiffré à attaquer.
+ * <p>
+ * Similaire à {@link VideoSelectionController} mais pour le déchiffrement.
+ * Propose un explorateur de fichiers et une liste des vidéos déjà chiffrées
+ * disponibles dans le dossier {@code generated/crypted}. Le fichier retenu
+ * est passé au controller de brute force.
+ * <p>
+ * Cette scène est enregistrée dynamiquement par {@link DecryptionSelectionController}.
+ *
+ * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
+ */
 package fr.aimmer.controller;
 
 import fr.aimmer.AppConfig;
@@ -30,6 +42,11 @@ public class EncryptedFileSelectionController implements Controller
     private final String targetSceneId;
     private final Function<AppConfig, Controller> controllerFactory;
 
+    /**
+     * @param config              la config de session
+     * @param targetSceneId       l'ID de scène où naviguer après sélection
+     * @param controllerFactory   fabrique du controller cible à partir de la config
+     */
     public EncryptedFileSelectionController(AppConfig config, String targetSceneId,
                                             Function<AppConfig, Controller> controllerFactory)
     {
@@ -38,6 +55,11 @@ public class EncryptedFileSelectionController implements Controller
         this.controllerFactory = controllerFactory;
     }
 
+    /**
+     * Construit l'écran de sélection du fichier chiffré.
+     *
+     * @return la scène de sélection
+     */
     @Override
     public Scene get()
     {
@@ -74,7 +96,7 @@ public class EncryptedFileSelectionController implements Controller
             }
         });
 
-        // Pré-sélection du premier fichier disponible
+        // Pré-sélection du premier fichier si dispo
         File[] selectedFile = { cryptedFiles.isEmpty() ? null : cryptedFiles.get(0) };
         if (selectedFile[0] != null)
             selectedFileLabel.setText(selectedFile[0].getName());
@@ -83,8 +105,10 @@ public class EncryptedFileSelectionController implements Controller
         Button launchButton = new Button("Déchiffrer →");
         launchButton.setFont(Font.font("System", FontWeight.BOLD, 14));
         launchButton.setPadding(new Insets(10, 40, 10, 40));
+        // Désactivé tant qu'aucun fichier n'est sélectionné
         launchButton.setDisable(selectedFile[0] == null);
 
+        // Parcourir
         browseButton.setOnAction(e ->
         {
             FileChooser fileChooser = new FileChooser();
@@ -92,6 +116,7 @@ public class EncryptedFileSelectionController implements Controller
             fileChooser.getExtensionFilters().add(
                     new FileChooser.ExtensionFilter("Fichiers vidéo", "*.mp4", "*.avi", "*.mkv", "*.mov", "*.wmv")
             );
+            // Le répertoire initial est le dossier des vidéos chiffrées s'il existe
             File cryptedDir = new File(config.outputDir(), "generated/crypted");
             if (cryptedDir.isDirectory()) fileChooser.setInitialDirectory(cryptedDir);
             Stage stage = (Stage) browseButton.getScene().getWindow();
@@ -104,6 +129,7 @@ public class EncryptedFileSelectionController implements Controller
             }
         });
 
+        // Clic dans la liste
         videoList.getSelectionModel().selectedItemProperty().addListener((obs, old, newVal) ->
         {
             if (newVal != null) {
@@ -113,6 +139,7 @@ public class EncryptedFileSelectionController implements Controller
             }
         });
 
+        // Lancement de l'attaque
         launchButton.setOnAction(e ->
         {
             AppConfig newConfig = new AppConfig(
@@ -132,6 +159,11 @@ public class EncryptedFileSelectionController implements Controller
         return new Scene(root, Main.WIDTH, Main.HEIGHT);
     }
 
+    /**
+     * Cherche les vidéos déjà chiffrées dans le dossier {@code generated/crypted}.
+     *
+     * @return la liste des fichiers vidéo trouvés
+     */
     private List<File> findCryptedVideos()
     {
         List<File> videos = new ArrayList<>();
