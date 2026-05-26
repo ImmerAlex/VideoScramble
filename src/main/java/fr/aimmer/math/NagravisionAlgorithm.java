@@ -6,12 +6,10 @@
  *   dst = base + (offset + (2*step+1)*i) % blockSize
  * </pre>
  * <p>
- * L'offset effectif varie à chaque frame : {@code offset + frameIndex mod 256}.
- * Ceci garantit un brouillage dynamique — la permutation n'est jamais la même
- * d'une frame à l'autre.
+ * La permutation est identique pour toutes les frames de la vidéo.
  * <p>
  * Algorithme symétrique : la même opération avec les mêmes paramètres
- * chiffre puis déchiffre (la variation par frame est déterministe).
+ * chiffre puis déchiffre.
  *
  * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
  */
@@ -25,7 +23,6 @@ public class NagravisionAlgorithm extends AbstractFramePermutation
 {
     private final int offset;
     private final int step;
-    private int frameIndex;
 
     /**
      * @param offset décalage r ∈ [0, 255]
@@ -52,21 +49,16 @@ public class NagravisionAlgorithm extends AbstractFramePermutation
     @Override
     protected void prepareForResolution(int width, int height)
     {
-        // On réinitialise le compteur de frames à chaque nouvelle vidéo
-        this.frameIndex = 0;
     }
 
     @Override
     protected void transformFrame(Mat source, Mat dest, boolean inverse)
     {
-        // L'offset varie avec le numéro de frame (modulo 256)
-        int effectiveOffset = (offset + frameIndex) & 0xFF;
-        int[] mapping = computeRowMapping(source.rows(), effectiveOffset, step);
+        int[] mapping = computeRowMapping(source.rows(), offset, step);
         if (inverse)
             applyInverseRowPermutation(source, dest, mapping);
         else
             applyRowPermutation(source, dest, mapping);
-        frameIndex++;
     }
 
     /**
@@ -76,7 +68,7 @@ public class NagravisionAlgorithm extends AbstractFramePermutation
      * puis permute chaque bloc avec la formule de Nagravision.
      *
      * @param height hauteur de l'image en pixels
-     * @param offset décalage (offset effectif, déjà modulé par le numéro de frame)
+     * @param offset décalage
      * @param step   pas
      * @return tableau mapping[i] = position de la ligne i dans l'image chiffrée
      */

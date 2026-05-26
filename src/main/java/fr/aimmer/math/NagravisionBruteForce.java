@@ -9,9 +9,6 @@
  * Le score est moyenné sur plusieurs frames réparties dans la vidéo pour
  * éviter d'être trompé par une frame d'intro/outro ou un fond uni.
  * <p>
- * Tient compte de la variation d'offset par frame introduite dans
- * {@link NagravisionAlgorithm} ({@code effectiveOffset = (offset + frameIndex) & 0xFF}).
- * <p>
  * Le paradigme "exploration de clé + scoring de lissé" est partagé : seule
  * la fonction de scoring change entre les attaques (Euclide, Pearson, L1…).
  *
@@ -110,7 +107,7 @@ public class NagravisionBruteForce implements DecryptionMethod
                 double frameScore = 0;
                 // On somme le score sur toutes les frames échantillonnées
                 for (SampledFrame sf : sampledFrames) {
-                    frameScore += scoreCandidate(sf.rows, height, offset, step, sf.frameIndex);
+                    frameScore += scoreCandidate(sf.rows, height, offset, step);
                 }
                 if (frameScore < bestScore) {
                     bestScore = frameScore;
@@ -181,7 +178,7 @@ public class NagravisionBruteForce implements DecryptionMethod
                 for (int c = 0, ci = 0; c < rowBytes; c += COLUMN_STRIDE, ci++)
                     rows[r][ci] = fullRow[c];
             }
-            frames.add(new SampledFrame(pos, rows));
+            frames.add(new SampledFrame(rows));
         }
 
         return frames;
@@ -190,31 +187,24 @@ public class NagravisionBruteForce implements DecryptionMethod
     /**
      * Score d'une clé candidate : somme des scores entre lignes consécutives
      * de l'image reconstituée. Plus le score est bas, mieux c'est.
-     * <p>
-     * L'offset effectif inclut la position de la frame dans la vidéo pour
-     * correspondre à la variation par frame de {@link NagravisionAlgorithm}.
      *
-     * @param rows       les lignes de la frame (déjà en mémoire)
-     * @param height     hauteur de la frame
-     * @param offset     offset candidat
-     * @param step       step candidat
-     * @param frameIndex position de la frame dans la vidéo
+     * @param rows   les lignes de la frame (déjà en mémoire)
+     * @param height hauteur de la frame
+     * @param offset offset candidat
+     * @param step   step candidat
      * @return le score total pour cette clé sur cette frame
      */
-    private double scoreCandidate(byte[][] rows, int height, int offset, int step, int frameIndex)
+    private double scoreCandidate(byte[][] rows, int height, int offset, int step)
     {
-        // On reproduit l'offset effectif de NagravisionAlgorithm
-        int effectiveOffset = (offset + frameIndex) & 0xFF;
-        int[] mapping = NagravisionAlgorithm.computeRowMapping(height, effectiveOffset, step);
+        int[] mapping = NagravisionAlgorithm.computeRowMapping(height, offset, step);
 
         double total = 0;
-        // On score chaque paire de lignes adjacentes après dé-permutation
         for (int i = 0; i < height - 1; i++) {
             total += scoring.score(rows[mapping[i]], rows[mapping[i + 1]]);
         }
         return total;
     }
 
-    /** Une frame échantillonnée avec ses lignes et sa position dans la vidéo. */
-    private record SampledFrame(int frameIndex, byte[][] rows) {}
+    /** Une frame échantillonnée avec ses lignes. */
+    private record SampledFrame(byte[][] rows) {}
 }

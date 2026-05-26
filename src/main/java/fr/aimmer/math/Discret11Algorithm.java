@@ -7,8 +7,7 @@
  * Le choix par ligne est piloté par une séquence pseudo-aléatoire dérivée
  * d'une graine (la clé).
  * <p>
- * La graine effective varie à chaque frame : {@code seed + frameIndex}.
- * La séquence de décalages n'est donc jamais la même d'une frame à l'autre.
+ * La séquence de décalages est identique pour toutes les frames de la vidéo.
  * <p>
  * Algorithme symétrique : chiffrer puis déchiffrer avec la même graine restaure
  * l'image originale.
@@ -28,7 +27,6 @@ public class Discret11Algorithm extends AbstractFramePermutation
     private static final int SHIFT_LEVELS = 3;
 
     private final int seed;
-    private int frameIndex;
 
     /**
      * @param seed la graine du PRNG (dérivée de offset*128+step dans l'UI)
@@ -53,16 +51,13 @@ public class Discret11Algorithm extends AbstractFramePermutation
     @Override
     protected void prepareForResolution(int width, int height)
     {
-        this.frameIndex = 0;
     }
 
     @Override
     protected void transformFrame(Mat source, Mat dest, boolean inverse)
     {
-        // La graine varie avec la frame pour un brouillage dynamique
-        int[] shifts = computeRowShifts(source.rows(), seed + frameIndex);
+        int[] shifts = computeRowShifts(source.rows(), seed);
         applyRowShifts(source, dest, shifts, inverse);
-        frameIndex++;
     }
 
     /**
@@ -72,7 +67,7 @@ public class Discret11Algorithm extends AbstractFramePermutation
      * La séquence est déterministe pour une même graine.
      *
      * @param height nombre de lignes
-     * @param seed   la graine effective (seed + frameIndex)
+     * @param seed   la graine
      * @return tableau des décalages par ligne
      */
     // package-private pour les tests

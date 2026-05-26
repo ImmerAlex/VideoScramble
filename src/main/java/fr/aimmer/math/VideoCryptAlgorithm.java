@@ -10,8 +10,7 @@
  * éventuelle attaque brute force), on quantifie le point de coupe sur N
  * positions discrètes au lieu de la largeur complète.
  * <p>
- * La graine effective varie à chaque frame : {@code seed + frameIndex}.
- * La séquence de coupes n'est donc jamais la même d'une frame à l'autre.
+ * La séquence de coupes est identique pour toutes les frames de la vidéo.
  * <p>
  * Algorithme involutif : la même opération avec la même graine chiffre et
  * déchiffre — le paramètre {@code inverse} de {@link #transformFrame} est
@@ -31,7 +30,6 @@ public class VideoCryptAlgorithm extends AbstractFramePermutation
     private static final int CUT_POSITIONS = 256;
 
     private final int seed;
-    private int frameIndex;
 
     /**
      * @param seed la graine du PRNG (dérivée de offset*128+step dans l'UI)
@@ -56,17 +54,13 @@ public class VideoCryptAlgorithm extends AbstractFramePermutation
     @Override
     protected void prepareForResolution(int width, int height)
     {
-        this.frameIndex = 0;
     }
 
     @Override
     protected void transformFrame(Mat source, Mat dest, boolean inverse)
     {
-        // La graine varie avec la frame
-        int[] cuts = computeRowCutPoints(source.rows(), source.cols(), seed + frameIndex);
-        // L'opération est sa propre inverse : on ignore le paramètre 'inverse'
+        int[] cuts = computeRowCutPoints(source.rows(), source.cols(), seed);
         applyCutAndRotate(source, dest, cuts);
-        frameIndex++;
     }
 
     /**
@@ -78,7 +72,7 @@ public class VideoCryptAlgorithm extends AbstractFramePermutation
      *
      * @param height nombre de lignes
      * @param width  largeur de l'image en pixels
-     * @param seed   la graine effective (seed + frameIndex)
+     * @param seed   la graine
      * @return tableau des points de coupe par ligne
      */
     // package-private pour les tests
