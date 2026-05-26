@@ -16,14 +16,13 @@
  */
 package fr.aimmer.math;
 
-import org.opencv.core.Mat;
-import org.opencv.videoio.VideoCapture;
-import org.opencv.videoio.Videoio;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.IntConsumer;
+
+import org.opencv.core.Mat;
+import org.opencv.videoio.VideoCapture;
+import org.opencv.videoio.Videoio;
 
 public class NagravisionBruteForce implements DecryptionMethod
 {
@@ -72,7 +71,7 @@ public class NagravisionBruteForce implements DecryptionMethod
      * @return le résultat (fichier déchiffré + clé)
      */
     @Override
-    public BruteForceResult attack(File encryptedFile, File outputDir, IntConsumer progressCallback)
+    public BruteForceResult attack(File encryptedFile, File outputDir, BruteForceProgressCallback progressCallback)
     {
         System.out.println("[VideoScramble] BruteForce : input=" + encryptedFile.getAbsolutePath()
                 + " (" + encryptedFile.length() + " octets)"
@@ -115,9 +114,8 @@ public class NagravisionBruteForce implements DecryptionMethod
                     bestStep = step;
                 }
                 done++;
-                // Notifie la progression toutes les 512 clés (pour pas spammer)
-                if (progressCallback != null && done % 512 == 0) {
-                    progressCallback.accept(done);
+                if (progressCallback != null) {
+                    progressCallback.update(done, TOTAL_KEYS, bestOffset, bestStep, bestScore);
                 }
             }
         }

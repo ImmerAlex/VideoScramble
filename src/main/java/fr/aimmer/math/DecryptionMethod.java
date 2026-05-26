@@ -10,7 +10,6 @@
 package fr.aimmer.math;
 
 import java.io.File;
-import java.util.function.IntConsumer;
 
 public interface DecryptionMethod
 {
@@ -26,10 +25,10 @@ public interface DecryptionMethod
      *
      * @param encryptedFile    la vidéo chiffrée à attaquer
      * @param outputDir        le dossier où écrire le résultat
-     * @param progressCallback notifié avec le nombre de clés testées, peut être {@code null}
+     * @param progressCallback notifié à chaque clé testée avec le meilleur score courant, peut être {@code null}
      * @return le résultat contenant le fichier déchiffré et la clé trouvée
      */
-    BruteForceResult attack(File encryptedFile, File outputDir, IntConsumer progressCallback);
+    BruteForceResult attack(File encryptedFile, File outputDir, BruteForceProgressCallback progressCallback);
 
     /**
      * Total de clés que l'attaque parcourt, utilisé pour calibrer une ProgressBar côté UI.

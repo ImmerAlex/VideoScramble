@@ -19,6 +19,7 @@ import fr.aimmer.math.BruteForceResult;
 import fr.aimmer.math.DecryptionMethod;
 import fr.aimmer.utils.MediaViewFactory;
 import fr.aimmer.view.GoHomeButton;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -69,7 +70,12 @@ public class BruteForceSceneController implements Controller
         ProgressBar progressBar = new ProgressBar(0);
         progressBar.setPrefWidth(400);
 
-        root.getChildren().addAll(statusLabel, progressBar);
+        Label bestKeyLabel = new Label("Meilleure clé : —");
+        bestKeyLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
+        Label bestScoreLabel = new Label("Score : —");
+        bestScoreLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
+
+        root.getChildren().addAll(statusLabel, progressBar, bestKeyLabel, bestScoreLabel);
 
         Scene scene = new Scene(root, Main.WIDTH, Main.HEIGHT);
 
@@ -88,8 +94,16 @@ public class BruteForceSceneController implements Controller
                 BruteForceResult result = attack.attack(
                         fileToDecrypt,
                         config.outputDir(),
-                        // callback de progression : met à jour la barre
-                        done -> updateProgress(done, attack.totalKeys())
+                        // callback de progression : met à jour la barre et la meilleure clé
+                        (done, totalKeys, bestOffset, bestStep, bestScore) -> {
+                            updateProgress(done, totalKeys);
+                            String keyText = "Meilleure clé : offset=" + bestOffset + "  step=" + bestStep;
+                            String scoreText = "Score : " + String.format("%.1f", bestScore);
+                            Platform.runLater(() -> {
+                                bestKeyLabel.setText(keyText);
+                                bestScoreLabel.setText(scoreText);
+                            });
+                        }
                 );
 
                 System.out.println("[VideoScramble] Attaque terminée : clé=(" + result.offset()
