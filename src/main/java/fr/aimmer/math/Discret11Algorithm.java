@@ -24,7 +24,7 @@ import java.util.Random;
 public class Discret11Algorithm extends AbstractFramePermutation
 {
     /** Pas du décalage horizontal (en pixels). 3 niveaux possibles : 0, +UNIT, +2*UNIT. */
-    private static final int SHIFT_UNIT   = 4;
+    private static final int SHIFT_UNIT   = 40;
     private static final int SHIFT_LEVELS = 3;
 
     private final int seed;

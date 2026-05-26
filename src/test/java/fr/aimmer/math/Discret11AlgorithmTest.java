@@ -9,12 +9,15 @@
  */
 package fr.aimmer.math;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class Discret11AlgorithmTest
 {
@@ -39,14 +42,14 @@ class Discret11AlgorithmTest
     void computeRowShifts_onlyProducesAuthorizedLevels()
     {
         // Le système Discret 11 utilise 3 niveaux : 0, +UNIT, +2*UNIT.
-        // Avec SHIFT_UNIT=4, les valeurs autorisées sont {0, 4, 8}.
+        // Avec SHIFT_UNIT=40, les valeurs autorisées sont {0, 40, 80}.
         int[] shifts = Discret11Algorithm.computeRowShifts(720, 12345);
         Set<Integer> distinct = new HashSet<>();
         for (int s : shifts) distinct.add(s);
 
         for (int s : distinct) {
-            assertTrue(s == 0 || s == 4 || s == 8,
-                    "Shift hors des niveaux autorisés {0, 4, 8} : " + s);
+            assertTrue(s == 0 || s == 40 || s == 80,
+                    "Shift hors des niveaux autorisés {0, 40, 80} : " + s);
         }
     }
 
