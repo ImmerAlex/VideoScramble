@@ -8,7 +8,6 @@
  */
 package fr.aimmer;
 
-import fr.aimmer.utils.ResourceUtils;
 import nu.pattern.OpenCV;
 
 import java.io.File;
@@ -33,14 +32,12 @@ public class Main
 		AppConfig config;
 
 		if (args.length == 0) {
-			// Mode graphique : on prend la vidéo de démo embarquée et des valeurs par défaut
-			System.out.println(LOG_PREFIX + " Aucun argument fourni. Démarrage en mode GUI avec les valeurs par défaut.");
-			File inputFile = ResourceUtils.resolveVideo("video/Pencil_Candle_1280x720.mp4");
-			File outputDir = ResourceUtils.resolveOutputDir(new File("src/main/resources"));
+			// Mode graphique : aucune vidéo par défaut, l'utilisateur choisit dans l'UI
+			System.out.println(LOG_PREFIX + " Aucun argument fourni. Démarrage en mode GUI.");
 			config = new AppConfig(
 					'C',
-					inputFile,
-					outputDir,
+					null,
+					new File(System.getProperty("user.dir")),
 					42,
 					13
 			);
@@ -56,8 +53,10 @@ public class Main
 
 		// Affichage de la config pour debug
 		System.out.println(LOG_PREFIX + " Config : mode=" + config.mode()
-				+ ", input=" + config.inputFile().getAbsolutePath()
-				+ " (exists=" + config.inputFile().exists() + ", size=" + config.inputFile().length() + ")"
+				+ ", input=" + (config.inputFile() != null ? config.inputFile().getAbsolutePath() : "(aucun)")
+				+ (config.inputFile() != null
+					? " (exists=" + config.inputFile().exists() + ", size=" + config.inputFile().length() + ")"
+					: "")
 				+ ", outputDir=" + config.outputDir().getAbsolutePath()
 				+ " (exists=" + config.outputDir().exists() + ")"
 				+ ", offset=" + config.offset()

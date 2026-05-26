@@ -4,9 +4,11 @@
  * Porte tous les paramètres d'une session : mode (chiffrement/déchiffrement),
  * fichier vidéo d'entrée, dossier de sortie, et la clé (offset, step).
  * Construite par {@link fr.aimmer.Main#parseArgs} ou via l'UI.
+ * <p>
+ * En mode GUI sans vidéo par défaut, {@code inputFile} peut être {@code null}.
  *
  * @param mode      'C' pour chiffrement, 'D' pour déchiffrement
- * @param inputFile la vidéo source
+ * @param inputFile la vidéo source (peut être {@code null} en GUI avant sélection)
  * @param outputDir le dossier où écrire les fichiers générés
  * @param offset    décalage r ∈ [0, 255]
  * @param step      pas s ∈ [0, 127]

@@ -1,9 +1,8 @@
 /**
  * VideoScramble — Écran de sélection du fichier vidéo à chiffrer.
  * <p>
- * Propose deux moyens de choisir la vidéo source : un explorateur de fichiers
- * (FileChooser) ou une liste des vidéos disponibles localement dans les ressources
- * du projet. Le fichier retenu est passé au controller de chiffrement suivant.
+ * Propose un explorateur de fichiers (FileChooser) pour choisir la vidéo source.
+ * Le fichier retenu est passé au controller de chiffrement suivant.
  * <p>
  * Cette scène est enregistrée dynamiquement par {@link EncryptionSelectionController}
  * car elle dépend de l'algorithme choisi.
@@ -16,15 +15,12 @@ import fr.aimmer.AppConfig;
 import fr.aimmer.Main;
 import fr.aimmer.math.EncryptionMethod;
 import fr.aimmer.ui.scene.SceneManager;
-import fr.aimmer.utils.ResourceUtils;
 import fr.aimmer.view.GoHomeButton;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
@@ -33,7 +29,6 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
-import java.util.List;
 import java.util.function.Function;
 
 public class VideoSelectionController implements Controller
@@ -74,38 +69,23 @@ public class VideoSelectionController implements Controller
 		Label browseTitle = new Label("Fichier sélectionné :");
 		browseTitle.setFont(Font.font("System", FontWeight.BOLD, 14));
 
-		// Affiche le nom du fichier courant (celui de la config par défaut)
-		Label selectedFileLabel = new Label(config.inputFile().getName());
+		File initialFile = config.inputFile();
+		Label selectedFileLabel = new Label(
+				initialFile != null ? initialFile.getName() : "Aucun fichier sélectionné");
 
 		Button browseButton = new Button("Parcourir…");
 
 		HBox browseBox = new HBox(12, browseButton, selectedFileLabel);
 		browseBox.setAlignment(Pos.CENTER_LEFT);
 
-		// --- Liste des vidéos disponibles localement ---
-		Label listTitle = new Label("Vidéos disponibles dans le projet :");
-		listTitle.setFont(Font.font("System", FontWeight.BOLD, 14));
-
-		ListView<File> videoList = new ListView<>();
-		videoList.setPrefHeight(260);
-		videoList.getItems().addAll(findLocalVideos());
-		videoList.setCellFactory(e -> new ListCell<>()
-		{
-			@Override
-			protected void updateItem(File item, boolean empty)
-			{
-				super.updateItem(item, empty);
-				setText(empty || item == null ? null : item.getPath());
-			}
-		});
-
 		// Fichier retenu : on passe par un tableau pour pouvoir muter dans les lambdas
-		File[] selectedFile = { config.inputFile() };
+		File[] selectedFile = { initialFile };
 
 		// --- Bouton de lancement ---
 		Button launchButton = new Button("Chiffrer →");
 		launchButton.setFont(Font.font("System", FontWeight.BOLD, 14));
 		launchButton.setPadding(new Insets(10, 40, 10, 40));
+		launchButton.setDisable(initialFile == null);
 
 		// Parcourir : ouvre un FileChooser
 		browseButton.setOnAction(e ->
@@ -120,16 +100,7 @@ public class VideoSelectionController implements Controller
 			if (file != null) {
 				selectedFile[0] = file;
 				selectedFileLabel.setText(file.getName());
-				videoList.getSelectionModel().clearSelection();
-			}
-		});
-
-		// Clic dans la liste : met à jour le fichier sélectionné
-		videoList.getSelectionModel().selectedItemProperty().addListener((obs, old, newVal) ->
-		{
-			if (newVal != null) {
-				selectedFile[0] = newVal;
-				selectedFileLabel.setText(newVal.getName());
+				launchButton.setDisable(false);
 			}
 		});
 
@@ -152,18 +123,8 @@ public class VideoSelectionController implements Controller
 			sm.switchTo("scene:encryption");
 		});
 
-		root.getChildren().addAll(title, browseTitle, browseBox, listTitle, videoList, launchButton, new GoHomeButton());
+		root.getChildren().addAll(title, browseTitle, browseBox, launchButton, new GoHomeButton());
 
 		return new Scene(root, Main.WIDTH, Main.HEIGHT);
-	}
-
-	/**
-	 * Cherche les vidéos disponibles dans les ressources du projet.
-	 *
-	 * @return la liste des fichiers vidéo trouvés localement
-	 */
-	private List<File> findLocalVideos()
-	{
-		return ResourceUtils.findLocalVideos("video", null);
 	}
 }
