@@ -114,7 +114,7 @@ public class EncryptedFileSelectionController implements Controller
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Sélectionner une vidéo chiffrée");
             fileChooser.getExtensionFilters().add(
-                    new FileChooser.ExtensionFilter("Fichiers vidéo", "*.mp4", "*.avi", "*.mkv", "*.mov", "*.wmv")
+                    new FileChooser.ExtensionFilter("Fichiers vidéo", "*.mp4", "*.avi", "*.mkv", "*.mov", "*.wmv", "*.m4v")
             );
             // Le répertoire initial est le dossier des vidéos chiffrées s'il existe
             File cryptedDir = new File(config.outputDir(), "generated/crypted");

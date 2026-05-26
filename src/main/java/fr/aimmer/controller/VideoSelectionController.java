@@ -113,7 +113,7 @@ public class VideoSelectionController implements Controller
 			FileChooser fileChooser = new FileChooser();
 			fileChooser.setTitle("Sélectionner une vidéo");
 			fileChooser.getExtensionFilters().add(
-					new FileChooser.ExtensionFilter("Fichiers vidéo", "*.mp4", "*.avi", "*.mkv", "*.mov", "*.wmv")
+					new FileChooser.ExtensionFilter("Fichiers vidéo", "*.mp4", "*.avi", "*.mkv", "*.mov", "*.wmv", "*.m4v")
 			);
 			Stage stage = (Stage) browseButton.getScene().getWindow();
 			File file = fileChooser.showOpenDialog(stage);
