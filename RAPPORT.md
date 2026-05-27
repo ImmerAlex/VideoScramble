@@ -329,7 +329,7 @@ return Math.sqrt(sum);
 ```
 
 **Particularités** :
-- `& 0xFF` convertit les bytes signés Java `[-128, 127]` en entiers non signés `[0, 255]` — indispensable car la soustraction directe de bytes signés produirait des résultats incorrects (ex: `-1 - 0 = -1` au lieu de `255 - 0 = 255`)
+- `& 0xFF` convertit les bytes signés Java `[-128, 127]` en entiers non signés `[0, 255]` — indispensable car la soustraction directe de bytes signés produirait des résultats incorrects (ex: `-1 - 0 = -1` au lieu de `255 - 0 = 255`). **Mécanisme** : (1) promotion numérique binaire — avant l'opération bitwise, le `byte` est promu en `int` avec extension de signe (les 24 bits supérieurs sont remplis de `1` si le byte est négatif, ex: `byte -1` = `11111111` devient l'`int -1` = `11111111 11111111 11111111 11111111`). (2) masquage — `0xFF` = `00000000 00000000 00000000 11111111`, le `&` conserve uniquement les 8 bits de poids faible et met les 24 bits supérieurs à zéro. Résultat : `11111111 11111111 11111111 11111111 & 00000000 00000000 00000000 11111111 = 00000000 00000000 00000000 11111111 = 255`. C'est le masque qui annule l'extension de signe.
 - La racine carrée est conservée pour la correspondance avec la définition mathématique, bien qu'elle ne soit pas strictement nécessaire pour comparer les scores (préserver l'ordre relatif suffirait)
 
 **Sensibilité** : Euclide est sensible aux décalages de luminosité (dégradés verticaux, vignettage). C'est la métrique de référence historique du projet.
@@ -346,12 +346,53 @@ La formule est implémentée en **une seule passe** avec 5 accumulateurs et la f
 r = (n·Σxy − Σx·Σy) / √((n·Σx² − (Σx)²)·(n·Σy² − (Σy)²))
 ```
 
-**Protections numériques** (lignes 72-77) :
-- `Math.max(0, ...)` sur les variances : protège contre les erreurs d'arrondi flottant qui pourraient rendre la variance très légèrement négative
-- `if (denom == 0) return 0` : cas d'une ligne constante (variance nulle), on retourne une corrélation neutre pour éviter `NaN`
-- `if (n == 0) return 0` : cas limite d'une ligne vide
+```java
+static double pearsonCorrelation(byte[] row1, byte[] row2)
+{
+    int n = row1.length;
+    if (n == 0) return 0;
 
-**Score final** : `return 1.0 - pearsonCorrelation(row1, row2)` — `PearsonScoring.java:30`. Convention respectée : score bas = lignes proches. Deux lignes identiques → `r = 1` → `score = 0`. Deux lignes décorrélées → `r = 0` → `score = 1`. Deux lignes anti-corrélées → `r = -1` → `score = 2`.
+    double sumX  = 0;
+    double sumY  = 0;
+    double sumXX = 0;
+    double sumYY = 0;
+    double sumXY = 0;
+
+    // Une seule passe pour accumuler les 5 sommes
+    for (int i = 0; i < n; i++) {
+        int x = row1[i] & 0xFF;
+        int y = row2[i] & 0xFF;
+        sumX  += x;
+        sumY  += y;
+        sumXX += (double) x * x;
+        sumYY += (double) y * y;
+        sumXY += (double) x * y;
+    }
+
+    double numerator = n * sumXY - sumX * sumY;
+
+    double varX = Math.max(0, n * sumXX - sumX * sumX);
+    double varY = Math.max(0, n * sumYY - sumY * sumY);
+    double denom = Math.sqrt(varX * varY);
+
+    if (denom == 0) return 0;
+    return numerator / denom;
+}
+```
+
+Le score final est `1.0 − pearsonCorrelation(row1, row2)` (`PearsonScoring.java:30`) pour respecter la convention score bas = lignes proches.
+
+**Détail de la formule développée** : La définition classique `r = Σ((x_i − x̄)(y_i − ȳ)) / √(Σ(x_i − x̄)² · Σ(y_i − ȳ)²)` nécessiterait deux passes (une pour calculer les moyennes, une seconde pour les écarts). La formule fermée utilisée évite ce double parcours :
+
+- **Numérateur** : `n·Σxy − Σx·Σy` — covariance développée (identité `Σ(x_i − x̄)(y_i − ȳ) = Σxy − n·x̄·ȳ` avec `x̄ = Σx/n`)
+- **Dénominateur** : `√((n·Σx² − (Σx)²) · (n·Σy² − (Σy)²))` — produit des écarts-types développés (identité `Σ(x_i − x̄)² = Σx² − (Σx)²/n`, multiplié par `n²` sous la racine)
+
+**Protections numériques** :
+- `Math.max(0, ...)` sur les variances (lignes 72-73) : protège contre les erreurs d'arrondi flottant qui pourraient rendre `n·Σx² − (Σx)²` très légèrement négatif (impossible mathématiquement, possible en `double`). Exemple concret : `0.1 + 0.2 − 0.3` vaut `5.55e-17` et non `0` en virgule flottante.
+- `if (denom == 0) return 0` (ligne 76) : cas d'une ligne constante (variance nulle). La corrélation avec une ligne constante est indéfinie mathématiquement ; on retourne `r = 0` (corrélation neutre), ce qui donne un score de `1`. Convention raisonnable : une ligne constante n'apporte pas d'information discriminante.
+- `if (n == 0) return 0` (ligne 51) : cas limite d'une ligne vide (ne se produit pas en pratique).
+
+**Pourquoi `double` pour les accumulateurs ?** Une ligne de 320 pixels (1280/4 après sous-échantillonnage) avec valeurs sur `[0, 255]` produit `Σx²` jusqu'à `320 × 255² ≈ 2,08 × 10^7`, ce qui tient dans un `double` sans perte. Un `long` suffirait mais nécessiterait un cast explicite lors de la division finale — le `double` est plus naturel pour le calcul du ratio.
 
 **Avantage clé** : Pearson est insensible aux décalages de luminosité additive (transformations affines `y = a·x + b`). Un dégradé vertical ou un vignettage n'affecte pas le coefficient de corrélation. Ceci est démontrable en comparant les résultats avec Euclide sur une vidéo à fort dégradé lumineux — c'est un point pédagogique majeur pour la soutenance.
 
