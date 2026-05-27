@@ -1,8 +1,7 @@
 /**
  * VideoScramble — Chiffrement/Déchiffrement vidéo inspiré des systèmes analogiques.
  * <p>
- * Point d'entrée principal. Gère le parsing des arguments CLI, le chargement
- * d'OpenCV et le lancement de l'application JavaFX.
+ * Point d'entrée principal. Charge OpenCV et lance l'application JavaFX en mode GUI.
  *
  * @author Alex IMMER & Olivier MARAVAL, Groupe Alt1
  */
@@ -22,34 +21,22 @@ public class Main
 	private static final String LOG_PREFIX = "[VideoScramble]";
 
 	/**
-	 * Point d'entrée. Sans argument → mode GUI avec la vidéo embarquée.
-	 * Avec arguments → mode CLI (chiffrement/déchiffrement Nagravision).
+	 * Point d'entrée. Démarre l'application en mode GUI.
+	 * La vidéo source est choisie par l'utilisateur dans l'interface.
 	 *
-	 * @param args arguments de la ligne de commande
+	 * @param args ignorés (mode GUI uniquement)
 	 */
 	public static void main(String[] args)
 	{
-		AppConfig config;
+		System.out.println(LOG_PREFIX + " Démarrage en mode GUI.");
 
-		if (args.length == 0) {
-			// Mode graphique : aucune vidéo par défaut, l'utilisateur choisit dans l'UI
-			System.out.println(LOG_PREFIX + " Aucun argument fourni. Démarrage en mode GUI.");
-			config = new AppConfig(
-					'C',
-					null,
-					new File(System.getProperty("user.dir")),
-					42,
-					13
-			);
-		} else {
-			if (args.length == 1 && (args[0].equals("--help") || args[0].equals("-h"))) {
-				printHelp();
-				return;
-			}
-
-			config = parseArgs(args);
-			if (config == null) return;
-		}
+		AppConfig config = new AppConfig(
+				'C',
+				null,
+				new File(System.getProperty("user.dir")),
+				42,
+				13
+		);
 
 		// Affichage de la config pour debug
 		System.out.println(LOG_PREFIX + " Config : mode=" + config.mode()
@@ -88,112 +75,5 @@ public class Main
 			}
 		}
 		App.application(config, args);
-	}
-
-	/**
-	 * Parse les arguments de la ligne de commande pour construire une {@link AppConfig}.
-	 * <p>
-	 * Format attendu : {@code <C|D> <vidéo> <dossier_sortie> [--r offset] [--s step]}.
-	 *
-	 * @param args les arguments bruts du main
-	 * @return la config parsée, ou {@code null} en cas d'erreur (le programme quitte)
-	 */
-	private static AppConfig parseArgs(String[] args)
-	{
-		if (args.length < 3) {
-			error("Nombre d'arguments insuffisant.");
-			return null;
-		}
-
-		try {
-			char mode = args[0].charAt(0);
-			if (mode != 'C' && mode != 'D')
-				error("Le mode doit être 'C' (chiffrement) ou 'D' (déchiffrement).");
-
-			File inputFile = new File(args[1]);
-			if (!inputFile.exists() || inputFile.isDirectory())
-				error("Chemin de vidéo invalide : " + args[1]);
-
-			File outputDir = new File(args[2]);
-			if (!outputDir.exists() || !outputDir.isDirectory())
-				error("Dossier de sortie invalide : " + args[2]);
-
-			int offset = 42;
-			int step   = 13;
-
-			// Options nommées (peuvent être omises, on garde les défauts)
-			for (int i = 3; i < args.length; i += 2) {
-				switch (args[i]) {
-					case "--r" -> {
-						offset = Integer.parseInt(args[i + 1]);
-						if (offset < 0 || offset > 255)
-							error("Le décalage r doit être compris entre 0 et 255.");
-					}
-					case "--s" -> {
-						step = Integer.parseInt(args[i + 1]);
-						if (step < 0 || step > 127)
-							error("Le pas s doit être compris entre 0 et 127.");
-					}
-					default -> error("Option inconnue : " + args[i]);
-				}
-			}
-
-			return new AppConfig(mode, inputFile, outputDir, offset, step);
-
-		} catch (NumberFormatException e) {
-			error("Format de nombre invalide dans les options.");
-		} catch (ArrayIndexOutOfBoundsException e) {
-			error("Valeur manquante pour une option.");
-		} catch (Exception e) {
-			error("Erreur lors de l'analyse des arguments : " + e.getMessage());
-		}
-
-		return null;
-	}
-
-	/**
-	 * Affiche un message d'erreur, puis l'aide, puis quitte.
-	 *
-	 * @param msg le message d'erreur
-	 */
-	private static void error(String msg)
-	{
-		System.err.println("Erreur: " + msg + "\n");
-		printHelp();
-		System.exit(1);
-	}
-
-	/**
-	 * Affiche l'aide de la ligne de commande sur stdout.
-	 */
-	private static void printHelp()
-	{
-		String help = """
-				Chiffrement et déchiffrement de vidéo.
-
-				Usage:
-				    java -jar video-scramble.jar <C|D> <input_video> <output_dir> [--r <offset>] [--s <step>]
-				    java -jar video-scramble.jar --help
-
-				Arguments:
-				    <C|D>          Type d'opération :
-				                       C = chiffrement
-				                       D = déchiffrement
-
-				    <input_video>  Chemin vers le fichier vidéo d'entrée
-				    <output_dir>   Chemin vers le dossier de sortie
-
-				    --r <offset>   Décalage r (offset), codé sur 8 bits
-				                   Valeur comprise entre 0 et 255 (défaut: 42)
-
-				    --s <step>     Pas s (step), codé sur 7 bits
-				                   Valeur comprise entre 0 et 127 (défaut: 13)
-
-				Exemples:
-				    java -jar video-scramble.jar C video.mp4 output/ --r 42 --s 13
-				    java -jar video-scramble.jar D output/video.enc.mp4 output/ --r 42 --s 13
-				""";
-
-		System.out.println(help);
 	}
 }

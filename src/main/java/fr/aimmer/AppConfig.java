@@ -3,7 +3,7 @@
  * <p>
  * Porte tous les paramètres d'une session : mode (chiffrement/déchiffrement),
  * fichier vidéo d'entrée, dossier de sortie, et la clé (offset, step).
- * Construite par {@link fr.aimmer.Main#parseArgs} ou via l'UI.
+ * Construite dans {@link fr.aimmer.Main#main} et via l'UI.
  * <p>
  * En mode GUI sans vidéo par défaut, {@code inputFile} peut être {@code null}.
  *

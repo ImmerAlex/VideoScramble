@@ -38,7 +38,7 @@ Code de configuration : `pom.xml:49-78`.
 
 ```
 fr.aimmer/
-├── Main.java                 # Point d'entrée, parsing CLI, chargement OpenCV
+├── Main.java                 # Point d'entrée, chargement OpenCV, lancement JavaFX
 ├── App.java                  # Application JavaFX, câblage des scènes racines
 ├── AppConfig.java            # Record immuable de configuration de session
 ├── controller/               # Contrôleurs d'écran (1 classe par écran)
@@ -263,31 +263,7 @@ Le choix lossy devient problématique pour l'**étape 3** (embarquement de la cl
 
 Pour l'étape 3, une migration vers un codec lossless ou une stratégie de redondance serait nécessaire — voir la section 4 pour l'analyse détaillée.
 
-### 2.5 Interface en ligne de commande (CLI)
-
-#### Parsing des arguments
-
-`Main.parseArgs()` — `Main.java:99-173` :
-
-Format : `java -jar video-scramble.jar <C|D> <vidéo> <dossier_sortie> [--r offset] [--s step]`
-
-```
-Exemples :
-  java -jar video-scramble.jar C video.mp4 output/ --r 42 --s 13
-  java -jar video-scramble.jar D video.mp4 output/ --r 42 --s 13
-```
-
-Le CLI ne couvre que l'algorithme **Nagravision**. Discret 11 et VideoCrypt sont accessibles uniquement via l'interface graphique. Cette limitation est documentée dans l'aide (`--help`, `Main.java:133-155`) et dans la FAQ.
-
-#### Sans argument : mode GUI
-
-`Main.java:38-48` : si aucun argument n'est fourni, l'application démarre en mode graphique. La vidéo d'entrée est laissée à `null` — l'utilisateur la sélectionne via l'explorateur de fichiers dans l'UI.
-
-#### Passage de configuration à JavaFX
-
-`AppConfig` est un record immuable positionné comme champ statique de `App` avant le `launch()` JavaFX (`App.java:17`). C'est le seul moyen propre de passer des paramètres typés à une `Application.launch()` sans repasser par les `String[] args`. Le champ `config` est privé et accessible via `App.getConfig()`.
-
-### 2.6 Affichage côte à côte et affichage de la clé
+### 2.5 Affichage côte à côte et affichage de la clé
 
 **Écran de chiffrement** : `EncryptionSceneController.java:42-129`
 
@@ -772,11 +748,8 @@ Le nommage explicite (`NagravisionBruteForce`) et l'avertissement dans l'UI (`De
 | Mélange des lignes (VideoCrypt) | `VideoCryptAlgorithm.java:79-94` — `computeRowCutPoints()` + `applyCutAndRotate()` |
 | Enregistrement de la vidéo chiffrée | `AbstractFramePermutation.java:131-153` — `new VideoWriter(...)` |
 | Dé-mélange (déchiffrement) | `NagravisionAlgorithm.java:119-125` — `applyInverseRowPermutation()` |
-| Mode CLI (C/D) | `Main.java:99-173` — `parseArgs()` |
-| Aide CLI (`--help`) | `Main.java:133-155` — `printHelp()` |
 | Affichage côte à côte | `EncryptionSceneController.java:137-148` — `HBox` avec deux `MediaView` |
 | Affichage de la clé dans l'UI | `EncryptionSceneController.java:126-130` — `Label` offset/step |
-| Clé fournie en ligne de commande | `Main.java:144-158` — `--r` et `--s` |
 
 ### Exigences de l'étape 2
 

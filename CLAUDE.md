@@ -12,27 +12,14 @@ mvn test
 ```
 
 ```bash
-# Compiler
+# Compiler et lancer
 mvn clean package
-
-# Lancer (valeurs par défaut, vidéo embarquée)
 make run
 # ou
 mvn clean javafx:run
-
-# Lancer avec arguments personnalisés
-java -jar target/video-scramble.jar <C|D> <input_video> <output_dir> --r <offset> --s <step>
-
-# Aide CLI
-java -jar target/video-scramble.jar --help
 ```
 
-Arguments CLI :
-- `C|D` : mode Chiffrement ou Déchiffrement
-- `--r <0-255>` : offset (décalage)
-- `--s <0-127>` : step (pas)
-
-Sans arguments : l'application démarre en mode GUI avec la vidéo embarquée (`src/main/resources/video/Pencil_Candle_1280x720.mp4`), offset=42, step=13. Le CLI ne couvre que Nagravision ; Discret 11 et VideoCrypt sont accessibles uniquement via la GUI.
+L'application démarre en mode GUI. L'utilisateur choisit la vidéo source, l'algorithme de chiffrement et la clé (offset/step) via l'interface graphique.
 
 ## Stack technique
 
@@ -49,7 +36,7 @@ Les dépendances OpenCV et JavaFX sont embarquées dans le fat JAR via `maven-as
 
 ```
 fr.aimmer/
-├── Main.java                    # Entrée CLI, constantes WIDTH/HEIGHT
+├── Main.java                    # Entrée, constantes WIDTH/HEIGHT, chargement OpenCV
 ├── App.java                     # Entrée JavaFX, câblage des scènes racines
 ├── AppConfig.java               # Record immuable : mode, inputFile, outputDir, offset, step
 ├── controller/
@@ -92,7 +79,7 @@ fr.aimmer/
 
 **SceneManager** — singleton double-checked locking, gère le routage entre scènes avec cache optionnel. Enregistrement via `sm.register(id, controller)`, navigation via `sm.switchTo(id)` ou `sm.switchTo(id, cacheScene)`. Les scènes paramétrées (qui dépendent d'un choix utilisateur) sont enregistrées **dynamiquement** par leur parent, pas dans `App.start()`.
 
-**AppConfig (record immuable)** — toute la configuration de session est portée par `AppConfig`. `Main.main()` parse les args et construit un `AppConfig`, qui est injecté dans les controllers via leur constructeur. Ne jamais ajouter de champs mutables à `Main`. `Main.WIDTH` et `Main.HEIGHT` sont des constantes `final` pour la taille de la fenêtre JavaFX uniquement.
+**AppConfig (record immuable)** — toute la configuration de session est portée par `AppConfig`. L'instance est construite dans `Main.main()` avec les valeurs par défaut puis injectée dans les controllers via leur constructeur. L'utilisateur peut ajuster les paramètres via l'UI. Ne jamais ajouter de champs mutables à `Main`. `Main.WIDTH` et `Main.HEIGHT` sont des constantes `final` pour la taille de la fenêtre JavaFX uniquement.
 
 **Injection de dépendance via constructeur** — chaque controller reçoit ses dépendances (`AppConfig`, `EncryptionMethod`, `DecryptionMethod`…) à la construction. Aucun singleton statique métier.
 
@@ -204,11 +191,10 @@ Les scènes `scene:encryption:video-selection`, `scene:encryption`, `scene:decry
 - `OpenCV.loadLocally()` doit être appelé avant tout usage d'OpenCV (fait dans `Main.main`).
 - Le `SceneManager` doit être initialisé avec un `Stage` avant tout `switchTo` sans stage explicite.
 - `MediaViewFactory.getMediaView` lance la lecture automatiquement (`mediaPlayer.play()`).
-- La vidéo de test embarquée est à `src/main/resources/video/Pencil_Candle_1280x720.mp4` (1280×720).
 - Les fichiers générés sont écrits dans le même dossier que la vidéo d'entrée (`input.getParentFile()`), avec le préfixe correspondant au mode de chiffrement. Les préfixes (`encrypted_`, `encrypted_d11_`, `encrypted_vc_`) sont gérés par chaque algo via `filePrefix()`.
 - `App.config` est un champ statique positionné avant `launch()` — c'est le seul moyen propre de passer des paramètres typés à une `Application` JavaFX sans repasser par les args String.
 - `NagravisionBruteForce` est **sans état mutable** : une instance par scoring est partagée par toutes les sessions de décryption (cf. `DecryptionSelectionController.TYPES`).
-- `AbstractFramePermutation.process()` appelle `prepareForResolution(w, h)` une seule fois par vidéo : la sous-classe y initialise son compteur `frameIndex` et mémorise les dimensions. Le mapping/shifts/cuts sont recalculés à chaque frame dans `transformFrame()` pour garantir un brouillage dynamique.
+- `AbstractFramePermutation.process()` appelle `prepareForResolution(w, h)` une seule fois par vidéo : la sous-classe y initialise son état (frameIndex, dimensions…). Le mapping/shifts/cuts sont recalculés à chaque frame dans `transformFrame()` pour garantir un brouillage dynamique.
 
 ## Conventions git
 
