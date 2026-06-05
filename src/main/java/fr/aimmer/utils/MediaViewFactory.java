@@ -30,6 +30,7 @@ public class MediaViewFactory
 
 		Media       media       = new Media(file.toURI().toString());
 		MediaPlayer mediaPlayer = new MediaPlayer(media);
+		mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
 
 		// Log des problèmes éventuels
 		mediaPlayer.setOnError(() ->
