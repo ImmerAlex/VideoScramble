@@ -33,8 +33,11 @@ public class NagravisionBruteForce implements DecryptionMethod
     /** Nombre de frames échantillonnées pour le scoring (évite les faux positifs) */
     private static final int SAMPLE_COUNT   = 5;
 
-    /** 1 colonne sur COLUMN_STRIDE : 4x moins de calculs, précision quasi identique */
-    private static final int COLUMN_STRIDE  = 4;
+    /** Nombre cible d'echantillons par ligne apres sous-echantillonnage (stride adaptatif) */
+    private static final int TARGET_SAMPLES_PER_ROW = 128;
+
+    /** Pas de sous-echantillonnage maximal (evite de trop degrader la precision) */
+    private static final int MAX_STRIDE = 16;
 
     private final String displayName;
     private final RowScoringFunction scoring;
@@ -77,14 +80,16 @@ public class NagravisionBruteForce implements DecryptionMethod
                 + " (" + encryptedFile.length() + " octets)"
                 + ", totalKeys=" + TOTAL_KEYS);
 
-        VideoCapture capture = new VideoCapture(encryptedFile.getAbsolutePath());
+		VideoCapture capture = new VideoCapture(encryptedFile.getAbsolutePath());
 
-        if (!capture.isOpened())
-            throw new RuntimeException("Impossible d'ouvrir la vidéo : " + encryptedFile.getAbsolutePath());
+		if (!capture.isOpened())
+			throw new RuntimeException("Impossible d'ouvrir la vidéo : " + encryptedFile.getAbsolutePath());
 
-        int totalFrames = (int) capture.get(Videoio.CAP_PROP_FRAME_COUNT);
-        System.out.println("[VideoScramble] BruteForce : " + totalFrames + " frames, échantillonnage en cours...");
-        List<SampledFrame> sampledFrames = sampleFrames(capture, totalFrames);
+		int totalFrames = (int) capture.get(Videoio.CAP_PROP_FRAME_COUNT);
+		int width       = (int) capture.get(Videoio.CAP_PROP_FRAME_WIDTH);
+
+		System.out.println("[VideoScramble] BruteForce : " + totalFrames + " frames, échantillonnage en cours...");
+		List<SampledFrame> sampledFrames = sampleFrames(capture, totalFrames, width);
         capture.release();
 
         if (sampledFrames.isEmpty())
@@ -135,52 +140,56 @@ public class NagravisionBruteForce implements DecryptionMethod
      * @param totalFrames nombre total de frames dans la vidéo
      * @return la liste des frames échantillonnées avec leur position
      */
-    private static List<SampledFrame> sampleFrames(VideoCapture capture, int totalFrames)
-    {
-        List<SampledFrame> frames = new ArrayList<>();
+	private static List<SampledFrame> sampleFrames(VideoCapture capture, int totalFrames, int width)
+	{
+		List<SampledFrame> frames = new ArrayList<>();
 
-        // On évite les 20% du début et de la fin
-        int start = Math.max(1, totalFrames / 5);
-        int end = Math.max(start + 1, totalFrames * 4 / 5);
-        int step = Math.max(1, (end - start) / SAMPLE_COUNT);
+		// Stride adaptatif : plus la video est large, plus on sous-echantillonne
+		int channels = 3; // BGR
+		int stride   = computeStride(width, channels);
 
-        Mat frame = new Mat();
-        byte[] fullRow = null;
-        for (int i = 0; i < SAMPLE_COUNT; i++) {
-            int pos = start + i * step;
-            if (pos >= totalFrames) break;
+		// On évite les 20% du début et de la fin
+		int start = Math.max(1, totalFrames / 5);
+		int end = Math.max(start + 1, totalFrames * 4 / 5);
+		int step = Math.max(1, (end - start) / SAMPLE_COUNT);
 
-            capture.set(Videoio.CAP_PROP_POS_FRAMES, pos);
-            if (!capture.read(frame) || frame.empty()) continue;
+		Mat frame = new Mat();
+		byte[] fullRow = null;
+		for (int i = 0; i < SAMPLE_COUNT; i++) {
+			int pos = start + i * step;
+			if (pos >= totalFrames) break;
 
-            // Vérification : certains codecs ne supportent pas le seek précis
-            int actualPos = (int) capture.get(Videoio.CAP_PROP_POS_FRAMES);
-            if (actualPos < pos)
-            {
-                capture.set(Videoio.CAP_PROP_POS_FRAMES, pos);
-                if (!capture.read(frame) || frame.empty()) continue;
-            }
+			capture.set(Videoio.CAP_PROP_POS_FRAMES, pos);
+			if (!capture.read(frame) || frame.empty()) continue;
 
-            int height   = frame.rows();
-            int rowBytes = frame.cols() * frame.channels();
-            // Taille après sous-échantillonnage des colonnes
-            int sampled  = (rowBytes + COLUMN_STRIDE - 1) / COLUMN_STRIDE;
+			// Vérification : certains codecs ne supportent pas le seek précis
+			int actualPos = (int) capture.get(Videoio.CAP_PROP_POS_FRAMES);
+			if (actualPos < pos)
+			{
+				capture.set(Videoio.CAP_PROP_POS_FRAMES, pos);
+				if (!capture.read(frame) || frame.empty()) continue;
+			}
 
-            if (fullRow == null || fullRow.length != rowBytes)
-                fullRow = new byte[rowBytes];
+			int height   = frame.rows();
+			int rowBytes = frame.cols() * frame.channels();
+			// Taille après sous-échantillonnage des colonnes
+			int sampled  = (rowBytes + stride - 1) / stride;
 
-            // Extraction des lignes avec sous-échantillonnage
-            byte[][] rows = new byte[height][sampled];
-            for (int r = 0; r < height; r++) {
-                frame.get(r, 0, fullRow);
-                for (int c = 0, ci = 0; c < rowBytes; c += COLUMN_STRIDE, ci++)
-                    rows[r][ci] = fullRow[c];
-            }
-            frames.add(new SampledFrame(rows));
-        }
+			if (fullRow == null || fullRow.length != rowBytes)
+				fullRow = new byte[rowBytes];
 
-        return frames;
-    }
+			// Extraction des lignes avec sous-échantillonnage
+			byte[][] rows = new byte[height][sampled];
+			for (int r = 0; r < height; r++) {
+				frame.get(r, 0, fullRow);
+				for (int c = 0, ci = 0; c < rowBytes; c += stride, ci++)
+					rows[r][ci] = fullRow[c];
+			}
+			frames.add(new SampledFrame(rows));
+		}
+
+		return frames;
+	}
 
     /**
      * Score d'une clé candidate : somme des scores entre lignes consécutives
@@ -203,6 +212,25 @@ public class NagravisionBruteForce implements DecryptionMethod
         return total;
     }
 
-    /** Une frame échantillonnée avec ses lignes. */
+    /**
+     * Calcule un stride adaptatif en fonction de la resolution video.
+     * <p>
+     * Cible ~{@value #TARGET_SAMPLES_PER_ROW} echantillons par ligne,
+     * borne entre 1 et {@value #MAX_STRIDE}. Les grandes videos sont
+     * plus sous-echantillonnees (plus rapide), les petites conservent
+     * plus de precision.
+     *
+     * @param width    largeur de la video en pixels
+     * @param channels nombre de canaux (3 pour BGR)
+     * @return le stride a utiliser
+     */
+    private static int computeStride(int width, int channels)
+    {
+        int rowBytes = width * channels;
+        int stride   = Math.max(1, rowBytes / TARGET_SAMPLES_PER_ROW);
+        return Math.min(stride, MAX_STRIDE);
+    }
+
+    /** Une frame echantillonnee avec ses lignes. */
     private record SampledFrame(byte[][] rows) {}
 }
