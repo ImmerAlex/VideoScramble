@@ -19,6 +19,8 @@ package fr.aimmer.math;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.opencv.core.Mat;
 import org.opencv.videoio.VideoCapture;
@@ -28,7 +30,8 @@ public class NagravisionBruteForce implements DecryptionMethod
 {
     private static final int OFFSET_MAX     = 255;
     private static final int STEP_MAX       = 127;
-    private static final int TOTAL_KEYS     = (OFFSET_MAX + 1) * (STEP_MAX + 1);
+    private static final int KEYS_PER_ROW   = STEP_MAX + 1; // 128
+    private static final int TOTAL_KEYS     = (OFFSET_MAX + 1) * KEYS_PER_ROW;
 
     /** Nombre de frames échantillonnées pour le scoring (évite les faux positifs) */
     private static final int SAMPLE_COUNT   = 5;
@@ -65,8 +68,9 @@ public class NagravisionBruteForce implements DecryptionMethod
     }
 
     /**
-     * Lance l'attaque : échantillonne des frames, teste toutes les clés,
-     * retient la meilleure selon le scoring, puis déchiffre la vidéo avec.
+     * Lance l'attaque : échantillonne des frames, pré-calcule la matrice
+     * de scores pairwise et les mappings, puis évalue toutes les clés en
+     * parallèle. La clé minimisant la somme des scores est retenue.
      *
      * @param encryptedFile    la vidéo chiffrée
      * @param outputDir        dossier de sortie
@@ -100,36 +104,113 @@ public class NagravisionBruteForce implements DecryptionMethod
 
         int height = sampledFrames.get(0).rows.length;
 
-        int bestOffset = 0;
-        int bestStep = 0;
-        double bestScore = Double.MAX_VALUE;
-        int done = 0;
+        // Phase 1 : pré-calcul des 32 768 mappings (ne dépend que de height)
+        System.out.println("[VideoScramble] BruteForce : pré-calcul des " + TOTAL_KEYS + " mappings...");
+        int[][] allMappings = precomputeMappings(height);
 
-        // Exploration exhaustive de l'espace de clés
-        for (int offset = 0; offset <= OFFSET_MAX; offset++) {
-            for (int step = 0; step <= STEP_MAX; step++) {
-                double frameScore = 0;
-                // On somme le score sur toutes les frames échantillonnées
-                for (SampledFrame sf : sampledFrames) {
-                    frameScore += scoreCandidate(sf.rows, height, offset, step);
-                }
-                if (frameScore < bestScore) {
-                    bestScore = frameScore;
-                    bestOffset = offset;
-                    bestStep = step;
-                }
-                done++;
-                if (progressCallback != null) {
-                    progressCallback.update(done, TOTAL_KEYS, bestOffset, bestStep, bestScore);
-                }
+        // Phase 2 + 3 : pour chaque frame, pré-calcul de la matrice pairwise
+        // puis évaluation parallèle de toutes les clés
+        double[] cumulativeScores = new double[TOTAL_KEYS];
+        AtomicInteger framesDone = new AtomicInteger(0);
+        AtomicInteger bestIdx = new AtomicInteger(0);
+
+        for (SampledFrame sf : sampledFrames)
+        {
+            double[][] pairwise = computePairwiseMatrix(sf.rows, height);
+
+            double[] frameScores = new double[TOTAL_KEYS];
+            IntStream.range(0, TOTAL_KEYS).parallel().forEach(idx ->
+            {
+                int[] mapping = allMappings[idx];
+                double score = 0;
+                for (int i = 0; i < height - 1; i++)
+                    score += pairwise[mapping[i]][mapping[i + 1]];
+                frameScores[idx] = score;
+            });
+
+            for (int i = 0; i < TOTAL_KEYS; i++)
+                cumulativeScores[i] += frameScores[i];
+
+            int done = framesDone.incrementAndGet();
+
+            // Met à jour le meilleur score courant pour le callback
+            int currentBest = bestIdx.get();
+            for (int i = 0; i < TOTAL_KEYS; i++)
+            {
+                if (cumulativeScores[i] < cumulativeScores[currentBest])
+                    currentBest = i;
+            }
+            bestIdx.set(currentBest);
+
+            if (progressCallback != null)
+            {
+                int bestOffset = currentBest / KEYS_PER_ROW;
+                int bestStep = currentBest % KEYS_PER_ROW;
+                progressCallback.update(done, sampledFrames.size(), bestOffset, bestStep,
+                        cumulativeScores[currentBest]);
             }
         }
+
+        // Recherche du minimum absolu sur les scores cumulés
+        int finalBestIdx = 0;
+        for (int i = 1; i < TOTAL_KEYS; i++)
+        {
+            if (cumulativeScores[i] < cumulativeScores[finalBestIdx])
+                finalBestIdx = i;
+        }
+
+        int bestOffset = finalBestIdx / KEYS_PER_ROW;
+        int bestStep   = finalBestIdx % KEYS_PER_ROW;
 
         // Une fois la clé trouvée, on déchiffre vraiment la vidéo
         File outputFile = new NagravisionAlgorithm(bestOffset, bestStep).decrypt(encryptedFile, outputDir);
         System.out.println("[VideoScramble] BruteForce terminé : clé=(" + bestOffset + "," + bestStep
-                + "), score=" + bestScore + ", fichier=" + outputFile.getAbsolutePath());
+                + "), score=" + cumulativeScores[finalBestIdx] + ", fichier=" + outputFile.getAbsolutePath());
         return new BruteForceResult(outputFile, bestOffset, bestStep);
+    }
+
+    /**
+     * Pré-calcule les 32 768 mappings de lignes Nagravision.
+     * <p>
+     * Coût : O(TOTAL_KEYS × height) ~ 23,6 M ops pour 720p — négligeable
+     * car exécuté une seule fois par vidéo (height identique pour toutes les frames).
+     */
+    private static int[][] precomputeMappings(int height)
+    {
+        int[][] mappings = new int[TOTAL_KEYS][];
+        for (int offset = 0; offset <= OFFSET_MAX; offset++)
+        {
+            for (int step = 0; step <= STEP_MAX; step++)
+            {
+                int idx = offset * KEYS_PER_ROW + step;
+                mappings[idx] = NagravisionAlgorithm.computeRowMapping(height, offset, step);
+            }
+        }
+        return mappings;
+    }
+
+    /**
+     * Pré-calcule la matrice de scores pairwise pour une frame.
+     * <p>
+     * Au lieu d'appeler {@code scoring.score()} pour chaque clé × chaque paire
+     * de lignes consécutives (milliards d'appels), on l'appelle une fois par
+     * paire de lignes (height²/2 appels) et on stocke le résultat. L'évaluation
+     * d'une clé se réduit alors à des lookups dans cette matrice.
+     */
+    private double[][] computePairwiseMatrix(byte[][] rows, int height)
+    {
+        double[][] m = new double[height][height];
+        for (int i = 0; i < height; i++)
+        {
+            // Les paires (i,i) ne sont jamais consultées (pas de ligne consécutive identique)
+            for (int j = i + 1; j < height; j++)
+            {
+                double s = scoring.score(rows[i], rows[j]);
+                m[i][j] = s;
+                m[j][i] = s;
+            }
+        }
+        return m;
     }
 
     /**
@@ -190,27 +271,6 @@ public class NagravisionBruteForce implements DecryptionMethod
 
 		return frames;
 	}
-
-    /**
-     * Score d'une clé candidate : somme des scores entre lignes consécutives
-     * de l'image reconstituée. Plus le score est bas, mieux c'est.
-     *
-     * @param rows   les lignes de la frame (déjà en mémoire)
-     * @param height hauteur de la frame
-     * @param offset offset candidat
-     * @param step   step candidat
-     * @return le score total pour cette clé sur cette frame
-     */
-    private double scoreCandidate(byte[][] rows, int height, int offset, int step)
-    {
-        int[] mapping = NagravisionAlgorithm.computeRowMapping(height, offset, step);
-
-        double total = 0;
-        for (int i = 0; i < height - 1; i++) {
-            total += scoring.score(rows[mapping[i]], rows[mapping[i + 1]]);
-        }
-        return total;
-    }
 
     /**
      * Calcule un stride adaptatif en fonction de la resolution video.
